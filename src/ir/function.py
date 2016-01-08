@@ -124,4 +124,5 @@ class Function(Validator):
         for bb in self.__basic_blocks:
             bb.validate()
 
-    __repr__ = __str__
+    def __repr__(self):
+        return self.__name

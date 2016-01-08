@@ -80,7 +80,6 @@ class IRBuilder:
         else:
             raise Exception("Could not add instruction")
 
-    # @verify(name=str, ftype=FunctionType)
     def create_function(self, name, *args):
         f = Function(name)
         return f
