@@ -85,8 +85,8 @@ class IRBuilder:
     def create_function_type(self, ret_ty, *arg_tys):
         return FunctionType(ret_ty, *arg_tys)
 
-    @verify(name=str, ftype=FunctionType)
-    def create_function(self, name, ftype, *args):
+    # @verify(name=str, ftype=FunctionType)
+    def create_function(self, name, ftype=None, *args):
         f = Function(name, ftype)
         return f
 

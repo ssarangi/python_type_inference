@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 from src.ir.module import Module
 from src.ir.context import Context
+from src.ir.irbuilder import IRBuilder
+from src.ir.value import Argument
 
 import ast
 
@@ -33,10 +35,17 @@ class IRGenerator(ast.NodeVisitor):
     """
     def __init__(self):
         self.module = None
+        self.irbuilder = None
+        self.current_scope_stack = []
+
+    def current_scope(self):
+        return self.current_scope_stack[-1]
 
     def visit_Module(self, node):
+        print(ast.dump(node))
         ctx = Context()
         self.module = Module("root_module", ctx)
+        self.irbuilder = IRBuilder(self.module, ctx)
 
         for expr in node.body:
             ast.NodeVisitor.visit(self, expr)
@@ -48,7 +57,8 @@ class IRGenerator(ast.NodeVisitor):
         pass
 
     def visit_Expr(self, node):
-        pass
+        ast.NodeVisitor.visit(self, node.value)
+
 
     def visit_Assign(self, node):
         pass
@@ -63,4 +73,9 @@ class IRGenerator(ast.NodeVisitor):
         pass
 
     def visit_FunctionDef(self, func):
-        pass
+        args = [Argument(arg.arg) for arg in func.args.args]
+        irfunc = self.irbuilder.create_function(func.name, func.args.args)
+        self.module.functions.append(irfunc)
+
+        for inst in func.body:
+            ast.NodeVisitor.visit(self, inst)

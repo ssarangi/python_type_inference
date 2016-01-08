@@ -8,7 +8,7 @@ class Value:
         pass
 
 class Argument(Value):
-    def __init__(self, arg_type, name):
+    def __init__(self, name, arg_type=None):
         Value.__init__(self)
         self.__name = name
         self.__type = arg_type
@@ -22,7 +22,6 @@ class Argument(Value):
         return self.__type
 
     def __str__(self):
-        output_str = str(self.__type) + " " + "%" + str(self.__name)
-        return output_str
+        return self.__name
 
     __repr__ = __str__

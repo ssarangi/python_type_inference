@@ -57,20 +57,12 @@ class NameGenerator:
 
 
 class Function(Validator):
-    @verify(name=str, ftype=FunctionType)
-    def __init__(self, name, ftype):
+    def __init__(self, name, args, ftype=None):
         self.__basic_blocks = []
-
-        if not isinstance(name, str):
-            raise InvalidTypeException("name is expected to be a string")
-
         self.__name = name
 
-        if not isinstance(ftype, FunctionType):
-            raise InvalidTypeException("Function Type expected")
-
         self.__type = ftype
-        self.__arguments = [None] * len(ftype.arg_types)
+        self.__arguments = args
         self.__name_generator = NameGenerator()
 
     @property
@@ -87,7 +79,7 @@ class Function(Validator):
 
     @basic_blocks.setter
     def basic_blocks(self, block):
-        return self.__basic_blocks.append(block)
+        self.__basic_blocks.append(block)
 
     @property
     def args(self):
