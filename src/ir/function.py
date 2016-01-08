@@ -2,6 +2,7 @@
 
 from src.ir.exceptions import *
 from src.ir.validator import *
+from src.ir.instructions import Instruction
 
 class Global:
     def __init__(self, name, initializer):
@@ -41,7 +42,7 @@ class NameGenerator:
 
         return new_name
 
-    @verify(inst=ir.instructions.Instruction)
+    @verify(inst=Instruction)
     def generate(self, inst):
         if inst.name is None:
             return self.__get_variable_idx()

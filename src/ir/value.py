@@ -1,7 +1,5 @@
 __author__ = 'sarangis'
 
-from src.ir.types import *
-
 class Value:
     def __init__(self):
         pass

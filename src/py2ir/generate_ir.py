@@ -37,6 +37,7 @@ class IRGenerator(ast.NodeVisitor):
         self.module = None
         self.irbuilder = None
         self.current_scope_stack = []
+        self.symbol_table = {}
 
     def current_scope(self):
         return self.current_scope_stack[-1]

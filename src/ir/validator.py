@@ -1,7 +1,5 @@
 __author__ = 'sarangis'
 
-from src.ir.types import *
-
 # Code from http://typeandflow.blogspot.com/2011/06/python-decorator-with-optional-keyword.html
 # Very well explained
 class U:

@@ -1,4 +1,4 @@
-from ir.base_ir_visitor import *
+from src.ir.base_ir_visitor import *
 
 class Emit(IRBaseVisitor):
     def __init__(self):
