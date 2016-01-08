@@ -21,36 +21,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
+favs = ['berry', 'apple']
+name = 'peter'
 
-import sys
-import ast
-
-from src.def_use_chain import DefUseChain
-from src.const_folding_visitor import ConstFoldVisitor
-from src.const_prop_visitor import ConstPropVisitor
-
-def create_ast(source, filename):
-    tree = ast.parse(source, filename, 'exec')
-    return tree
-
-def create_transformations(tree):
-    def_use_chain = DefUseChain()
-    def_use_chain.visit(tree)
-
-    const_fold = ConstFoldVisitor()
-    const_fold.visit(tree)
-
-    print(ast.dump(tree))
-
-    ast_visitor = ConstPropVisitor()
-    ast_visitor.visit(tree)
-
-def main():
-    filename = sys.argv[1]
-    fptr = open(filename, "r")
-    source = fptr.read()
-    tree = create_ast(source, filename)
-    create_transformations(tree)
-
-if __name__ == "__main__":
-    main()
+for item in favs:
+    print('%s likes %s' % (name, item))
