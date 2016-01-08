@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015 <Satyajit Sarangi>
+Copyright (c) <2015> <sarangis>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,45 +22,45 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import sys
+from src.ir.module import Module
+from src.ir.context import Context
+
 import ast
 
-from src.def_use_chain import DefUseChain
-from src.const_folding_visitor import ConstFoldVisitor
-from src.const_prop_visitor import ConstPropVisitor
+class IRGenerator(ast.NodeVisitor):
+    """
+    Constant Propagation Visitor: This class does constant propagation for the node visitor so that types can be inferred
+    """
+    def __init__(self):
+        self.module = None
 
-from src.py2ir.generate_ir import IRGenerator
+    def visit_Module(self, node):
+        ctx = Context()
+        self.module = Module("root_module", ctx)
 
-def create_ast(source, filename):
-    tree = ast.parse(source, filename, 'exec')
-    return tree
+        for expr in node.body:
+            ast.NodeVisitor.visit(self, expr)
 
-def create_transformations(tree):
-    const_fold = ConstFoldVisitor()
-    const_fold.visit(tree)
+    def visit_Name(self, node):
+        pass
 
-    def_use_chain = DefUseChain()
-    def_use_chain.visit(tree)
+    def visit_BinOp(self, node):
+        pass
 
-    const_fold = ConstFoldVisitor()
-    # const_fold.visit(tree)
+    def visit_Expr(self, node):
+        pass
 
-    # print(ast.dump(tree))
+    def visit_Assign(self, node):
+        pass
 
-    const_prop = ConstPropVisitor()
-    # const_prop.visit(tree)
+    def visit_Str(self, node):
+        pass
 
-def generate_ir(tree):
-    ir_generator = IRGenerator()
-    ir_generator.visit(tree)
+    def visit_Return(self, node):
+        pass
 
-def main():
-    filename = sys.argv[1]
-    fptr = open(filename, "r")
-    source = fptr.read()
-    tree = create_ast(source, filename)
-    # create_transformations(tree)
-    generate_ir(tree)
+    def visit_Call(self, node):
+        pass
 
-if __name__ == "__main__":
-    main()
+    def visit_FunctionDef(self, func):
+        pass

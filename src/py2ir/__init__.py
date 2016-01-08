@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015 <Satyajit Sarangi>
+Copyright (c) <2015> <sarangis>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,46 +21,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-
-import sys
-import ast
-
-from src.def_use_chain import DefUseChain
-from src.const_folding_visitor import ConstFoldVisitor
-from src.const_prop_visitor import ConstPropVisitor
-
-from src.py2ir.generate_ir import IRGenerator
-
-def create_ast(source, filename):
-    tree = ast.parse(source, filename, 'exec')
-    return tree
-
-def create_transformations(tree):
-    const_fold = ConstFoldVisitor()
-    const_fold.visit(tree)
-
-    def_use_chain = DefUseChain()
-    def_use_chain.visit(tree)
-
-    const_fold = ConstFoldVisitor()
-    # const_fold.visit(tree)
-
-    # print(ast.dump(tree))
-
-    const_prop = ConstPropVisitor()
-    # const_prop.visit(tree)
-
-def generate_ir(tree):
-    ir_generator = IRGenerator()
-    ir_generator.visit(tree)
-
-def main():
-    filename = sys.argv[1]
-    fptr = open(filename, "r")
-    source = fptr.read()
-    tree = create_ast(source, filename)
-    # create_transformations(tree)
-    generate_ir(tree)
-
-if __name__ == "__main__":
-    main()
