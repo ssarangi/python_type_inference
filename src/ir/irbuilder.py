@@ -208,6 +208,14 @@ class IRBuilder:
         self.__add_instruction(xor_inst)
         return xor_inst
 
+    def create_number(self, number):
+        number = Number(number)
+        return number
+
+    def create_string(self, string):
+        string_obj = String(string)
+        return string_obj
+
     #def create_vector(self, baseTy, numElts, name=None):
     #    vecTy = VectorType(baseTy, numElts)
     #    alloca = self.create_alloca(vecTy, 1, None, name)

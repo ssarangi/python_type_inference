@@ -51,11 +51,16 @@ class IRGenerator(ast.NodeVisitor):
         for expr in node.body:
             ast.NodeVisitor.visit(self, expr)
 
+    def visit_Num(self, node):
+        pass
+
     def visit_Name(self, node):
         pass
 
     def visit_BinOp(self, node):
-        pass
+        left = node.left
+        right = node.right
+        op = node.op
 
     def visit_Expr(self, node):
         ast.NodeVisitor.visit(self, node.value)
@@ -64,7 +69,7 @@ class IRGenerator(ast.NodeVisitor):
     def visit_Assign(self, node):
         targets = node.targets
         value = node.value
-        pass
+        ast.NodeVisitor.visit(self, value)
 
 
     def visit_Str(self, node):
