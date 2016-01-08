@@ -32,6 +32,10 @@ class Module(Validator):
         self.__functions.append(func)
 
     @property
+    def function_decls(self):
+        return self.__func_declarations
+
+    @function_decls.setter
     def function_decls(self, func_decl):
         self.__func_declarations.append(func_decl)
 

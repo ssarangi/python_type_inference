@@ -1,7 +1,9 @@
 __author__ = 'sarangis'
 
-from ir.utils import *
-from ir.constants import *
+from src.ir.utils import *
+from src.ir.constants import *
+from src.ir.validator import verify, Validator
+from src.ir.exceptions import InvalidTypeException, NoBBTerminatorException
 
 class InstructionList(list):
     def __init__(self, name_generator):
@@ -97,11 +99,6 @@ class CallInstruction(Instruction):
         # Verify the Args
         self.__func.verify_args(arg_list)
         self.__args = arg_list
-        self.__type = self.__func.type
-
-    @property
-    def type(self):
-        return self.__type
 
     @property
     def function(self):
@@ -204,11 +201,6 @@ class BinOpInstruction(Instruction):
         self.__operator = binop
         self.__lhs = lhs
         self.__rhs = rhs
-        self.__type = self.__lhs.type
-
-    @property
-    def type(self):
-        return self.__type
 
     @property
     def operator(self):
@@ -322,10 +314,6 @@ class AllocaInstruction(Instruction):
         self.__align = align
 
     @property
-    def type(self):
-        return PointerType(self.__alloca_type, 0)
-
-    @property
     def numEls(self):
         return self.__numEls
 
@@ -335,7 +323,6 @@ class AllocaInstruction(Instruction):
 
     def __str__(self):
         output_str = "alloca "
-        output_str += str(self.type) + " "
         if self.numEls is not None:
             output_str += ", i32 %s" % self.numEls
 

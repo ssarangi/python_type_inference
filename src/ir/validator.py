@@ -1,24 +1,32 @@
 __author__ = 'sarangis'
 
-from ir.exceptions import *
-from ir.types import *
-import inspect
+from src.ir.types import *
 
 # Code from http://typeandflow.blogspot.com/2011/06/python-decorator-with-optional-keyword.html
 # Very well explained
+class U:
+    def __init__(self, *args):
+        self.types = args
+
+    def __str__(self):
+        return ",".join(self.types)
+
+    __repr__ = __str__
+
 def verify(func=None, **options):
     if func is not None:
         # We received the function on this call, so we can define
         # and return the inner function
         def inner(*args, **kwargs):
             if len(options) == 0:
-                raise InvalidUsageModel("Expected verification arguments")
+                raise Exception("Expected verification arguments")
 
-            original_func_args = inspect.getargspec(func).args
+            func_code = func.__code__
+            arg_names = func_code.co_varnames
 
             for k, v in options.items():
                 # Find the key in the original function
-                idx = original_func_args.index(k)
+                idx = arg_names.index(k)
 
                 if (len(args) > idx):
                     # get the idx'th arg
@@ -28,8 +36,17 @@ def verify(func=None, **options):
                     if k in kwargs:
                         arg = kwargs.get(k)
 
-                if not isinstance(arg, v):
-                    raise InvalidTypeException("Expected " + str(k) + " to be of type: " + v.__name__ + " but received type: " + str(type(k)))
+                if isinstance(v, U):
+                    # Unroll the types to check for multiple types
+                    types_match = False
+                    for dtype in v.types:
+                        if isinstance(arg, dtype):
+                            types_match = True
+
+                    if types_match == False:
+                        raise Exception("Expected " + str(k) + " to be of type: " + str(v) + " but received type: " + str(type(arg)))
+                elif not isinstance(arg, v):
+                    raise Exception("Expected " + str(k) + " to be of type: " + v.__name__ + " but received type: " + str(type(arg)))
 
             output = func(*args, **kwargs)
             return output
@@ -41,6 +58,7 @@ def verify(func=None, **options):
         def partial_inner(func):
             return verify(func, **options)
         return partial_inner
+
 
 class Validator:
     def validate(self):

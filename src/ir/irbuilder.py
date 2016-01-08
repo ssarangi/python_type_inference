@@ -1,10 +1,8 @@
 ﻿__author__ = 'sarangis'
 
-from ir.types import *
-from ir.function import *
-from ir.context import *
-from ir.module import *
-from ir.instructions import *
+from src.ir.function import *
+from src.ir.module import *
+from src.ir.instructions import *
 
 class IRBuilder:
     """ The main builder to be used for creating instructions. This has to be used to insert / create / modify instructions
@@ -82,12 +80,9 @@ class IRBuilder:
         else:
             raise Exception("Could not add instruction")
 
-    def create_function_type(self, ret_ty, *arg_tys):
-        return FunctionType(ret_ty, *arg_tys)
-
     # @verify(name=str, ftype=FunctionType)
-    def create_function(self, name, ftype=None, *args):
-        f = Function(name, ftype)
+    def create_function(self, name, *args):
+        f = Function(name)
         return f
 
     def set_entry_point(self, function):
@@ -214,8 +209,8 @@ class IRBuilder:
         self.__add_instruction(xor_inst)
         return xor_inst
 
-    def create_vector(self, baseTy, numElts, name=None):
-        vecTy = VectorType(baseTy, numElts)
-        alloca = self.create_alloca(vecTy, 1, None, name)
-        vec = self.create_load(alloca)
-        return vec
+    #def create_vector(self, baseTy, numElts, name=None):
+    #    vecTy = VectorType(baseTy, numElts)
+    #    alloca = self.create_alloca(vecTy, 1, None, name)
+    #    vec = self.create_load(alloca)
+    #    return vec

@@ -1,9 +1,7 @@
-from ir.module import *
-from ir.function import *
-from ir.instructions import *
+from src.ir.instructions import *
 
-from ir.base_ir_visitor import *
-from ir.validator import *
+from src.ir.base_ir_visitor import *
+from src.ir.validator import *
 
 import operator
 from collections import deque
