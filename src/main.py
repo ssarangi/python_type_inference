@@ -34,16 +34,19 @@ def create_ast(source, filename):
     return tree
 
 def create_transformations(tree):
+    const_fold = ConstFoldVisitor()
+    const_fold.visit(tree)
+
     def_use_chain = DefUseChain()
     def_use_chain.visit(tree)
 
     const_fold = ConstFoldVisitor()
-    const_fold.visit(tree)
+    # const_fold.visit(tree)
 
-    print(ast.dump(tree))
+    # print(ast.dump(tree))
 
-    ast_visitor = ConstPropVisitor()
-    ast_visitor.visit(tree)
+    const_prop = ConstPropVisitor()
+    # const_prop.visit(tree)
 
 def main():
     filename = sys.argv[1]

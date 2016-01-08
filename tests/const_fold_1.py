@@ -23,9 +23,13 @@ THE SOFTWARE.
 """
 
 def foo(a, b):
-    return a + b
+    a = a * 4
+    b = b * 3
+    c = a * b
+    return c
 
 def main():
-    foo(4 * 5, 3 * 2)
+    d = foo(4 * 5, 3 * 2)
+    return d
 
 main()
