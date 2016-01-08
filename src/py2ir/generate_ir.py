@@ -61,7 +61,10 @@ class IRGenerator(ast.NodeVisitor):
 
 
     def visit_Assign(self, node):
+        targets = node.targets
+        value = node.value
         pass
+
 
     def visit_Str(self, node):
         pass
