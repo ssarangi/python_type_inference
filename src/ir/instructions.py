@@ -46,6 +46,21 @@ class Instruction(Value):
     def erase_from_parent(self):
         parent = self.__parent
 
+        # Before removing any instruction from the parent make sure that all its uses
+        # have no reference to this instruction.
+        uses_remain = []
+        for use in self.uses:
+            if hasattr(use, "operands"):
+                for op in use.operands:
+                    if op == use:
+                        uses_remain.append(use)
+
+        if len(uses_remain) > 0:
+            print("Instruction Deleted: %s" % str(self))
+            for use in uses_remain:
+                print("Use: %s" % str(use))
+            raise Exception("Uses remain while current instruction is being deleted")
+
         for inst in parent.instructions:
             if inst == self:
                 self.parent.instructions.remove(inst)
@@ -213,7 +228,7 @@ class BinOpInstruction(Instruction):
 
     @property
     def rhs(self):
-        return  self.operands[1]
+        return self.operands[1]
 
     def __str__(self):
         if self.__operator == BinOpInstruction.OP_ADD:
@@ -237,28 +252,32 @@ class AddInstruction(BinOpInstruction):
     def __init__(self, lhs, rhs, parent=None, name=None):
         BinOpInstruction.__init__(self, BinOpInstruction.OP_ADD, lhs, rhs, parent, name)
 
+
 class SubInstruction(BinOpInstruction):
     def __init__(self, lhs, rhs, parent=None, name=None):
         BinOpInstruction.__init__(self, BinOpInstruction.OP_SUB, lhs, rhs, parent, name)
+
 
 class MulInstruction(BinOpInstruction):
     def __init__(self, lhs, rhs, parent=None, name=None):
         BinOpInstruction.__init__(self, BinOpInstruction.OP_MUL, lhs, rhs, parent, name)
 
+
 class DivInstruction(BinOpInstruction):
     def __init__(self, lhs, rhs, parent=None, name=None):
         BinOpInstruction.__init__(self, BinOpInstruction.OP_DIV, lhs, rhs, parent, name)
 
+
 class AllocaInstruction(Instruction):
-    def __init__(self, alloca_type, numEls=None, align=None, parent=None, name=None):
+    def __init__(self, alloca_type, num_elms=None, align=None, parent=None, name=None):
         Instruction.__init__(self, [], parent, name)
         self.__alloca_type = alloca_type
-        self.__numEls = numEls
+        self.__num_elms = num_elms
         self.__align = align
 
     @property
-    def numEls(self):
-        return self.__numEls
+    def num_elms(self):
+        return self.__num_elms
 
     @property
     def alignment(self):
@@ -266,8 +285,8 @@ class AllocaInstruction(Instruction):
 
     def __str__(self):
         output_str = "alloca "
-        if self.numEls is not None:
-            output_str += ", i32 %s" % self.numEls
+        if self.num_elms is not None:
+            output_str += ", i32 %s" % self.num_elms
 
         if self.alignment is not None:
             output_str += ", align %s" % self.alignment
@@ -366,16 +385,27 @@ class CompareTypes:
 
     @staticmethod
     def get_str(compareTy):
-        if compareTy == CompareTypes.EQ: return "eq"
-        elif compareTy == CompareTypes.NE: return "ne"
-        elif compareTy == CompareTypes.UGT: return "ugt"
-        elif compareTy == CompareTypes.UGE: return "uge"
-        elif compareTy == CompareTypes.ULT: return "ult"
-        elif compareTy == CompareTypes.ULE: return "ule"
-        elif compareTy == CompareTypes.SGT: return "sgt"
-        elif compareTy == CompareTypes.SGE: return "sge"
-        elif compareTy == CompareTypes.SLT: return "slt"
-        elif compareTy == CompareTypes.SLE: return "sle"
+        if compareTy == CompareTypes.EQ:
+            return "eq"
+        elif compareTy == CompareTypes.NE:
+            return "ne"
+        elif compareTy == CompareTypes.UGT:
+            return "ugt"
+        elif compareTy == CompareTypes.UGE:
+            return "uge"
+        elif compareTy == CompareTypes.ULT:
+            return "ult"
+        elif compareTy == CompareTypes.ULE:
+            return "ule"
+        elif compareTy == CompareTypes.SGT:
+            return "sgt"
+        elif compareTy == CompareTypes.SGE:
+            return "sge"
+        elif compareTy == CompareTypes.SLT:
+            return "slt"
+        elif compareTy == CompareTypes.SLE:
+            return "sle"
+
 
 class CompareInstruction(Instruction):
     def __init__(self, cond, op1, op2, parent=None, name=None):
@@ -401,6 +431,7 @@ class CompareInstruction(Instruction):
 
     __repr__ = __str__
 
+
 class ICmpInstruction(CompareInstruction):
     def __init__(self, cond, op1, op2, parent=None, name=None):
         CompareInstruction.__init__(self, cond, op1, op2, parent, name)
@@ -412,6 +443,7 @@ class ICmpInstruction(CompareInstruction):
         return output_str
 
     __repr__ = __str__
+
 
 class FCmpInstruction(CompareInstruction):
     def __init__(self, cond, op1, op2, parent=None, name=None):
@@ -426,6 +458,7 @@ class FCmpInstruction(CompareInstruction):
 
     __repr__ = __str__
 
+
 class CastInstruction(Instruction):
     def __init__(self, parent=None, name=None):
         Instruction.__init__(self, [], parent, name)
@@ -435,6 +468,7 @@ class CastInstruction(Instruction):
 
     __repr__ = __str__
 
+
 class GEPInstruction(Instruction):
     def __init__(self, parent=None, name=None):
         Instruction.__init__(self, [], parent, name)
@@ -443,6 +477,7 @@ class GEPInstruction(Instruction):
         pass
 
     __repr__ = __str__
+
 
 class ExtractElementInstruction(Instruction):
     def __init__(self, vec, idx, parent=None, name=None):
@@ -463,6 +498,7 @@ class ExtractElementInstruction(Instruction):
 
     __repr__ = __str__
 
+
 class InsertElementInstruction(Instruction):
     def __init__(self, parent=None, name=None):
         Instruction.__init__(self, [], parent, name)
@@ -471,6 +507,7 @@ class InsertElementInstruction(Instruction):
         pass
 
     __repr__ = __str__
+
 
 class BitwiseBinaryInstruction(Instruction):
     SHL = 0
@@ -514,6 +551,7 @@ class BitwiseBinaryInstruction(Instruction):
         return output_str
 
     __repr__ = __str__
+
 
 class ShiftLeftInstruction(BitwiseBinaryInstruction):
     def __init__(self, op1, op2, parent=None, name=None):
