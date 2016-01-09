@@ -63,10 +63,15 @@ class ConstPropagationPass(FunctionPass, IRBaseVisitor):
         for inst in node.instructions:
             IRBaseVisitor.visit(self, inst)
 
+        for inst in self.insts_to_remove:
+            inst.erase_from_parent()
+
+        self.insts_to_remove.clear()
+
     def const_fold_binary_op(self, lhs, rhs, op):
         result = None
         if isinstance(lhs, Number) and isinstance(rhs, Number):
-            result = BINARY_OPERATORS['/'](lhs.number, rhs.number)
+            result = BINARY_OPERATORS[op](lhs.number, rhs.number)
             result = Number(result)
 
         return result
@@ -74,6 +79,8 @@ class ConstPropagationPass(FunctionPass, IRBaseVisitor):
     def replace_uses_with_const(self, node, const):
         for use in node.uses:
             self.replace_use_with_const(node, use, const)
+
+        self.insts_to_remove.append(node)
 
     def replace_use_with_const(self, node,  use, const):
         if hasattr(use, "operands"):

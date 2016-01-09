@@ -36,12 +36,19 @@ class Instruction(Value):
         self.__name = name
         self.__needs_name = needs_name
 
-        self.__operands = operands
+        self.operands = operands
         self.__uses = []
 
         for operand in operands:
             if isinstance(operand, Instruction):
                 operand.add_use(self)
+
+    def erase_from_parent(self):
+        parent = self.__parent
+
+        for inst in parent.instructions:
+            if inst == self:
+                self.parent.instructions.remove(inst)
 
     @property
     def uses(self):
@@ -49,10 +56,6 @@ class Instruction(Value):
 
     def add_use(self, use):
         self.__uses.append(use)
-
-    @property
-    def operands(self):
-        return self.__operands
 
     @property
     def needs_name(self):
@@ -131,19 +134,18 @@ class TerminateInstruction(Instruction):
 class ReturnInstruction(Instruction):
     def __init__(self, value=None, parent=None, name=None):
         Instruction.__init__(self, [value], parent, name, needs_name=False)
-        self.__value = value
 
     @property
     def value(self):
-        return self.__value
+        return self.operands[0]
 
     def __str__(self):
-        if self.__value is None:
+        if self.operands[0] is None:
             output_str = "return void"
-        elif hasattr(self.__value, "name"):
-            output_str = "return " + str(self.__value.name)
+        elif hasattr(self.operands[0], "name"):
+            output_str = "return " + str(self.operands[0].name)
         else:
-            output_str = "return " + str(self.__value)
+            output_str = "return " + str(self.operands[0])
         return output_str
 
     __repr__ = __str__
@@ -200,8 +202,6 @@ class BinOpInstruction(Instruction):
     def __init__(self, binop, lhs, rhs, parent=None, name=None):
         Instruction.__init__(self, [lhs, rhs], parent, name)
         self.__operator = binop
-        self.__lhs = lhs
-        self.__rhs = rhs
 
     @property
     def operator(self):
@@ -209,11 +209,11 @@ class BinOpInstruction(Instruction):
 
     @property
     def lhs(self):
-        return self.__lhs
+        return self.operands[0]
 
     @property
     def rhs(self):
-        return  self.__rhs
+        return  self.operands[1]
 
     def __str__(self):
         if self.__operator == BinOpInstruction.OP_ADD:

@@ -51,7 +51,6 @@ class IRGenerator(ast.NodeVisitor):
         self.module = Module("root_module", ctx)
         self.irbuilder = IRBuilder(self.module, ctx)
 
-        irbuilder = self.irbuilder
         for expr in node.body:
             ast.NodeVisitor.visit(self, expr)
 
