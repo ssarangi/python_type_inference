@@ -25,9 +25,6 @@ THE SOFTWARE.
 import sys
 import ast
 
-from src.def_use_chain import DefUseChain
-from src.const_folding_visitor import ConstFoldVisitor
-from src.const_prop_visitor import ConstPropVisitor
 from src.py2ir.const_propagation import ConstPropagationPass
 from src.optimizer.passmanager import PassManager
 from src.utils.print_utils import draw_header
@@ -36,21 +33,6 @@ from src.py2ir.generate_ir import IRGenerator
 def create_ast(source, filename):
     tree = ast.parse(source, filename, 'exec')
     return tree
-
-def create_transformations(tree):
-    const_fold = ConstFoldVisitor()
-    const_fold.visit(tree)
-
-    def_use_chain = DefUseChain()
-    def_use_chain.visit(tree)
-
-    const_fold = ConstFoldVisitor()
-    # const_fold.visit(tree)
-
-    # print(ast.dump(tree))
-
-    const_prop = ConstPropVisitor()
-    # const_prop.visit(tree)
 
 def generate_ir(tree):
     ir_generator = IRGenerator()
