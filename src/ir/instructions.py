@@ -79,7 +79,10 @@ class Instruction(Value):
         if self.__name is None:
             return None
 
-        return "%" + self.__name
+        if self.__name[0] != "%":
+            return "%" + self.__name
+        else:
+            return self.__name
 
     @name.setter
     def name(self, n):
@@ -97,7 +100,6 @@ class CallInstruction(Instruction):
         self.__func = func
 
         # Verify the Args
-        self.__func.verify_args(arg_list)
         self.__args = arg_list
 
     @property
@@ -109,8 +111,7 @@ class CallInstruction(Instruction):
         return self.__args
 
     def __str__(self):
-        functype = self.__func.type
-        output_str = "call " + str(functype.ret_type) + " @" + self.__func.name
+        output_str = "call " + " @" + self.__func.name
 
         output_str += render_list_with_parens(self.__args)
 
@@ -201,6 +202,9 @@ class BinOpInstruction(Instruction):
         self.__operator = binop
         self.__lhs = lhs
         self.__rhs = rhs
+
+        lhs.uses.append(self)
+        rhs.uses.append(self)
 
     @property
     def operator(self):

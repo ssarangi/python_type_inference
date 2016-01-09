@@ -53,6 +53,7 @@ def create_transformations(tree):
 def generate_ir(tree):
     ir_generator = IRGenerator()
     ir_generator.visit(tree)
+    print(ir_generator.module)
 
 def main():
     filename = sys.argv[1]

@@ -107,7 +107,7 @@ class Function(Validator):
         output_str += "define " + " " + self.__name + "("
 
         for count, arg in enumerate(self.__arguments):
-            output_str += str(arg)
+            output_str += arg.name
             if count != len(self.__arguments) - 1:
                 output_str += ", "
 

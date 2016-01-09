@@ -8,6 +8,7 @@ class Argument(Value):
     def __init__(self, name):
         Value.__init__(self)
         self.__name = name
+        self.uses = []
 
     @property
     def name(self):

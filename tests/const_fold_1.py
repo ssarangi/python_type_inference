@@ -7,5 +7,3 @@ def foo(a, b):
 def main():
     d = foo(4 * 5, 3 * 2)
     return d
-
-main()

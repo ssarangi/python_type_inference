@@ -4,6 +4,21 @@ from src.ir.function import *
 from src.ir.module import *
 from src.ir.instructions import *
 
+BINARY_OPERATORS = {
+    '+':   lambda x, y: x + y,
+    '-':   lambda x, y: x - y,
+    '*':   lambda x, y: x * y,
+    '**':  lambda x, y: x ** y,
+    '/':   lambda x, y: x / y,
+    '//':  lambda x, y: x // y,
+    '<<':  lambda x, y: x << y,
+    '>>':  lambda x, y: x >> y,
+    '%':   lambda x, y: x % type(x)(y),
+    '&':   lambda x, y: x & y,
+    '|':   lambda x, y: x | y,
+    '^':   lambda x, y: x ^ y,
+}
+
 class IRBuilder:
     """ The main builder to be used for creating instructions. This has to be used to insert / create / modify instructions
         This class will have to support all the other class creating it.
@@ -80,8 +95,17 @@ class IRBuilder:
         else:
             raise Exception("Could not add instruction")
 
-    def create_function(self, name, *args):
-        f = Function(name)
+    def const_fold_binary_op(self, lhs, rhs, op):
+        if isinstance(lhs, Number) and isinstance(rhs, Number):
+            lhs = lhs.number
+            rhs = rhs.number
+            result = BINARY_OPERATORS[op](lhs, rhs)
+            return Number(result)
+        else:
+            return None
+
+    def create_function(self, name, args):
+        f = Function(name, args)
         return f
 
     def set_entry_point(self, function):
@@ -112,50 +136,46 @@ class IRBuilder:
         self.__add_instruction(cond_branch)
         return cond_branch
 
-    def create_call(self, func, *args, name=None):
-        call_inst = CallInstruction(func, list(args), self.__current_bb, name)
+    def create_call(self, func, args, name=None):
+        call_inst = CallInstruction(func, args, self.__current_bb, name)
         self.__add_instruction(call_inst)
         return call_inst
 
     def create_add(self, lhs, rhs, name=None):
+        folded_inst = self.const_fold_binary_op(lhs, rhs, '+')
+        if folded_inst is not None:
+            return folded_inst
+
         add_inst = AddInstruction(lhs, rhs, self.__current_bb, name)
         self.__add_instruction(add_inst)
         return add_inst
 
     def create_sub(self, lhs, rhs, name=None):
+        folded_inst = self.const_fold_binary_op(lhs, rhs, '-')
+        if folded_inst is not None:
+            return folded_inst
+
         sub_inst = SubInstruction(lhs, rhs, self.__current_bb, name)
         self.__add_instruction(sub_inst)
         return sub_inst
 
     def create_mul(self, lhs, rhs, name=None):
+        folded_inst = self.const_fold_binary_op(lhs, rhs, '*')
+        if folded_inst is not None:
+            return folded_inst
+
         mul_inst = MulInstruction(lhs, rhs, self.__current_bb, name)
         self.__add_instruction(mul_inst)
         return mul_inst
 
     def create_div(self, lhs, rhs, name=None):
+        folded_inst = self.const_fold_binary_op(lhs, rhs, '/')
+        if folded_inst is not None:
+            return folded_inst
+
         div_inst = DivInstruction(lhs, rhs, self.__current_bb, name)
         self.__add_instruction(div_inst)
         return div_inst
-
-    def create_fadd(self, lhs, rhs, name=None):
-        fadd_inst = FAddInstruction(lhs, rhs, self.__current_bb, name)
-        self.__add_instruction(fadd_inst)
-        return fadd_inst
-
-    def create_fsub(self, lhs, rhs, name=None):
-        fsub_inst = FSubInstruction(lhs, rhs, self.__current_bb, name)
-        self.__add_instruction(fsub_inst)
-        return fsub_inst
-
-    def create_fmul(self, lhs, rhs, name=None):
-        fmul_inst = FMulInstruction(lhs, rhs, self.__current_bb, name)
-        self.__add_instruction(fmul_inst)
-        return fmul_inst
-
-    def create_fdiv(self, lhs, rhs, name=None):
-        fdiv_inst = FDivInstruction(lhs, rhs, self.__current_bb, name)
-        self.__add_instruction(fdiv_inst)
-        return fdiv_inst
 
     def create_icmp(self, lhs, rhs, name=None):
         icmp_inst = ICmpInstruction(CompareTypes.SLE, lhs, rhs, self.__current_bb, name)
@@ -179,11 +199,19 @@ class IRBuilder:
         pass
 
     def create_shl(self, op1, op2, name=None):
+        folded_inst = self.const_fold_binary_op(op1, op2, '<<')
+        if folded_inst is not None:
+            return folded_inst
+
         shl_inst = ShiftLeftInstruction(op1, op2, self.__current_bb, name)
         self.__add_instruction(shl_inst)
         return shl_inst
 
     def create_lshr(self, op1, op2, name=None):
+        folded_inst = self.const_fold_binary_op(op1, op2, '>>')
+        if folded_inst is not None:
+            return folded_inst
+
         lshr_inst = LogicalShiftRightInstruction(op1, op2, self.__current_bb, name)
         self.__add_instruction(lshr_inst)
         return lshr_inst
@@ -194,16 +222,28 @@ class IRBuilder:
         return ashr_inst
 
     def create_and(self, op1, op2, name=None):
+        folded_inst = self.const_fold_binary_op(op1, op2, '&')
+        if folded_inst is not None:
+            return folded_inst
+
         and_inst = AndInstruction(op1, op2, self.__current_bb, name)
         self.__add_instruction(and_inst)
         return and_inst
 
     def create_or(self, op1, op2, name=None):
+        folded_inst = self.const_fold_binary_op(op1, op2, '|')
+        if folded_inst is not None:
+            return folded_inst
+
         or_inst = OrInstruction(op1, op2, self.__current_bb, name)
         self.__add_instruction(or_inst)
         return or_inst
 
     def create_xor(self, op1, op2, name=None):
+        folded_inst = self.const_fold_binary_op(op1, op2, '^')
+        if folded_inst is not None:
+            return folded_inst
+
         xor_inst = XorInstruction(op1, op2, self.__current_bb, name)
         self.__add_instruction(xor_inst)
         return xor_inst

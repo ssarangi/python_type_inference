@@ -15,6 +15,7 @@ class Number(Constant):
     def __init__(self, number):
         Constant.__init__(self)
         self.number = number
+        self.uses = []
 
     def __str__(self):
         return str(self.number)
@@ -25,6 +26,7 @@ class String(Constant):
     def __init__(self, str):
         Constant.__init__(self)
         self.str = str
+        self.uses = []
 
     def __str__(self):
         return self.str

@@ -75,8 +75,6 @@ class Module(Validator):
     def __str__(self):
         output_str = ""
         output_str += "Module: %s\n" % (self.__name)
-        output_str += "Target Datalayout: %s\n" % (self.__data_layout)
-        output_str += "Target Arch: %s\n" % (self.__target_arch)
 
         for f in self.__func_declarations:
             output_str += str(f)

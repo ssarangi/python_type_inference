@@ -37,30 +37,67 @@ class IRGenerator(ast.NodeVisitor):
         self.module = None
         self.irbuilder = None
         self.current_scope_stack = []
-        self.symbol_table = {}
+        self.symbol_tables = [{}]
+        self.global_scope = {}
+
+    def get_current_symbol_table(self):
+        return self.symbol_tables[-1]
 
     def current_scope(self):
         return self.current_scope_stack[-1]
 
     def visit_Module(self, node):
-        print(ast.dump(node))
         ctx = Context()
         self.module = Module("root_module", ctx)
         self.irbuilder = IRBuilder(self.module, ctx)
 
+        irbuilder = self.irbuilder
         for expr in node.body:
             ast.NodeVisitor.visit(self, expr)
 
     def visit_Num(self, node):
-        pass
+        number = self.irbuilder.create_number(node.n)
+        return number
+
+    def visit_Str(self, node):
+        string = self.irbuilder.create_string(node.s)
+        return string
 
     def visit_Name(self, node):
-        pass
+        name = node.id
+        # Find the name in the symbol table
+        if name in self.get_current_symbol_table():
+            return self.get_current_symbol_table()[name]
+
+        raise Exception("Variable %s not found" % name)
 
     def visit_BinOp(self, node):
+        irbuilder = self.irbuilder
         left = node.left
         right = node.right
         op = node.op
+        irleft = ast.NodeVisitor.visit(self, left)
+        irright = ast.NodeVisitor.visit(self, right)
+
+        inst = None
+
+        if isinstance(op, ast.Add):
+            inst = irbuilder.create_add(irleft, irright, "add")
+        elif isinstance(op, ast.Sub):
+            inst = irbuilder.create_sub(irleft, irright, "sub")
+        elif isinstance(op, ast.Mult):
+            inst = irbuilder.create_mul(irleft, irright, "mult")
+        elif isinstance(op, ast.Div):
+            inst = irbuilder.create_div(irleft, irright, "div")
+        elif isinstance(op, ast.LShift):
+            inst = irbuilder.create_shl(irleft, irright, "shl")
+        elif isinstance(op, ast.RShift):
+            inst = irbuilder.create_lshr(irleft, irright, "lshr")
+
+        if inst is None:
+            raise Exception("Inst cannot be None")
+
+        return inst
 
     def visit_Expr(self, node):
         ast.NodeVisitor.visit(self, node.value)
@@ -68,23 +105,65 @@ class IRGenerator(ast.NodeVisitor):
 
     def visit_Assign(self, node):
         targets = node.targets
+
+        if len(targets) > 1:
+            raise Exception("Do not handle more than one return value")
+
         value = node.value
-        ast.NodeVisitor.visit(self, value)
+        rhs = ast.NodeVisitor.visit(self, value)
 
-
-    def visit_Str(self, node):
-        pass
+        target = targets[0]
+        self.get_current_symbol_table()[target.id] = rhs
 
     def visit_Return(self, node):
-        pass
+        value = node.value
+        irbuilder = self.irbuilder
+        if isinstance(value, ast.Name):
+            inst = self.get_current_symbol_table()[value.id]
+            irbuilder.create_return(inst)
+        else:
+            inst = ast.NodeVisitor.visit(self, value)
+            irbuilder.create_return(inst)
+
+        self.symbol_tables.pop()
 
     def visit_Call(self, node):
-        pass
+        irbuilder = self.irbuilder
+        irfunc = self.global_scope[node.func.id]
+
+        args = node.args
+
+        irargs = []
+        for arg in args:
+            if isinstance(arg, ast.Name):
+                irarg = self.get_current_symbol_table()[arg.name]
+            else:
+                irarg = ast.NodeVisitor.visit(self, arg)
+
+            irargs.append(irarg)
+
+        inst = irbuilder.create_call(irfunc, irargs)
+        return inst
 
     def visit_FunctionDef(self, func):
-        args = [Argument(arg.arg) for arg in func.args.args]
-        irfunc = self.irbuilder.create_function(func.name, func.args.args)
+        irbuilder = self.irbuilder
+        self.symbol_tables.append({})
+        irargs = [Argument(arg.arg) for arg in func.args.args]
+
+        for irarg in irargs:
+            self.get_current_symbol_table()[irarg.name] = irarg
+
+        irfunc = irbuilder.create_function(func.name, irargs)
+        entry_bb = irbuilder.create_basic_block("entry", irfunc)
+        irfunc.basic_blocks.append(entry_bb)
+        irbuilder.insert_after(entry_bb)
+
         self.module.functions.append(irfunc)
 
         for inst in func.body:
             ast.NodeVisitor.visit(self, inst)
+
+        self.global_scope[func.name] = irfunc
+
+        if func.name == "main":
+            self.module.entry_point = irfunc
