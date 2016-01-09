@@ -28,7 +28,9 @@ import ast
 from src.def_use_chain import DefUseChain
 from src.const_folding_visitor import ConstFoldVisitor
 from src.const_prop_visitor import ConstPropVisitor
-
+from src.py2ir.const_propagation import ConstPropagationPass
+from src.optimizer.passmanager import PassManager
+from src.utils.print_utils import draw_header
 from src.py2ir.generate_ir import IRGenerator
 
 def create_ast(source, filename):
@@ -53,12 +55,21 @@ def create_transformations(tree):
 def generate_ir(tree):
     ir_generator = IRGenerator()
     ir_generator.visit(tree)
-    print(ir_generator.module)
+
+    module = ir_generator.module
+    draw_header("IR")
+    print(module)
+    passmgr = PassManager()
+    passmgr.add_function_pass(ConstPropagationPass())
+    passmgr.run(module)
 
 def main():
     filename = sys.argv[1]
     fptr = open(filename, "r")
     source = fptr.read()
+
+    draw_header("Python Source")
+    print(source)
     tree = create_ast(source, filename)
     # create_transformations(tree)
     generate_ir(tree)

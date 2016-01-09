@@ -96,13 +96,14 @@ class IRBuilder:
             raise Exception("Could not add instruction")
 
     def const_fold_binary_op(self, lhs, rhs, op):
-        if isinstance(lhs, Number) and isinstance(rhs, Number):
-            lhs = lhs.number
-            rhs = rhs.number
-            result = BINARY_OPERATORS[op](lhs, rhs)
-            return Number(result)
-        else:
-            return None
+        return None
+        # if isinstance(lhs, Number) and isinstance(rhs, Number):
+        #     lhs = lhs.number
+        #     rhs = rhs.number
+        #     result = BINARY_OPERATORS[op](lhs, rhs)
+        #     return Number(result)
+        # else:
+        #     return None
 
     def create_function(self, name, args):
         f = Function(name, args)

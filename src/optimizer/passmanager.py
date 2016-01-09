@@ -1,7 +1,7 @@
 __author__ = 'sarangis'
 
-from ir.module import *
-from optimizer.pass_support import *
+from src.ir.module import *
+from src.optimizer.pass_support import *
 
 class PassManager:
     def __init__(self):

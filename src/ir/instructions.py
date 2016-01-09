@@ -52,7 +52,7 @@ class Instruction(Value):
 
     @property
     def operands(self):
-        return tuple(self.__operands)
+        return self.__operands
 
     @property
     def needs_name(self):
@@ -202,9 +202,6 @@ class BinOpInstruction(Instruction):
         self.__operator = binop
         self.__lhs = lhs
         self.__rhs = rhs
-
-        lhs.uses.append(self)
-        rhs.uses.append(self)
 
     @property
     def operator(self):
