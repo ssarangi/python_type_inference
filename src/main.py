@@ -27,8 +27,18 @@ import ast
 
 from src.optimizer.const_propagation import ConstPropagationPass
 from src.optimizer.passmanager import PassManager
+from src.codegen.x86codegen import x86CodeGen
+
 from src.utils.print_utils import draw_header
 from src.py2ir.generate_ir import IRGenerator
+
+import src.pyasm2.x86 as x86
+
+import src.pyasm2.jitter as jitter
+
+def create_bytes(byte_list):
+    x86bytes = bytes(byte_list)
+    return x86bytes
 
 def create_ast(source, filename):
     tree = ast.parse(source, filename, 'exec')
@@ -41,9 +51,34 @@ def generate_ir(tree):
     module = ir_generator.module
     draw_header("IR")
     print(module)
+
+    codegen = x86CodeGen()
     passmgr = PassManager()
-    passmgr.add_function_pass(ConstPropagationPass())
+    # passmgr.add_function_pass(ConstPropagationPass())
+    passmgr.add_module_pass(codegen)
     passmgr.run(module)
+
+    block = x86.Block()
+    block.append(x86.imul(x86.eax, x86.ebx))
+
+    inst = x86.mov(x86.eax, 50)
+    b = inst.bytes()
+
+    bytes = block.assemble()
+    inst = x86.imul(x86.eax, x86.ebx)
+    b = inst.bytes()
+
+    # bytes = codegen.get_assembly_bytes()
+    # print(bytes)
+    x86bytes = create_bytes(bytes)
+
+    # x86bytes = x86.mov(x86.eax, 50).bytes()
+    # x86bytes += x86.ret().bytes()
+    #
+    # x86bytes = bytes(x86bytes)
+
+    res = jitter.jit(x86bytes)
+    print("Function Return Result: %s" % res)
 
 def main():
     filename = sys.argv[1]
@@ -53,7 +88,6 @@ def main():
     draw_header("Python Source")
     print(source)
     tree = create_ast(source, filename)
-    # create_transformations(tree)
     generate_ir(tree)
 
 if __name__ == "__main__":

@@ -157,8 +157,6 @@ class IRGenerator(ast.NodeVisitor):
         irfunc.basic_blocks.append(entry_bb)
         irbuilder.insert_after(entry_bb)
 
-        self.module.functions.append(irfunc)
-
         for inst in func.body:
             ast.NodeVisitor.visit(self, inst)
 

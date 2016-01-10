@@ -10,11 +10,12 @@ class Module(Validator):
         self.__context = ctx
         self.__name = name
         self.__globals = []
-        self.__functions = []
+        self.__functions = {}
         self.__func_declarations = []
         self.__data_layout = []
         self.__target_arch = ""
         self.__entry_point = None
+        self.__db_strings = []
 
     @property
     def globals(self):
@@ -26,10 +27,6 @@ class Module(Validator):
     @property
     def functions(self):
         return self.__functions
-
-    @functions.setter
-    def functions(self, func):
-        self.__functions.append(func)
 
     @property
     def function_decls(self):
@@ -69,8 +66,11 @@ class Module(Validator):
 
     @entry_point.setter
     def entry_point(self, function):
-        assert function in self.__functions, "Function not present in module"
+        assert function.name in self.__functions.keys(), "Function not present in module"
         self.__entry_point = function
+
+    def add_to_db_string(self, string):
+        self.__db_strings.append(string)
 
     def __str__(self):
         output_str = ""
@@ -79,7 +79,7 @@ class Module(Validator):
         for f in self.__func_declarations:
             output_str += str(f)
 
-        for f in self.__functions:
+        for name, f in self.__functions.items():
             output_str += str(f)
 
         return output_str

@@ -107,6 +107,7 @@ class IRBuilder:
 
     def create_function(self, name, args):
         f = Function(name, args)
+        self.__module.functions[name] = f
         return f
 
     def set_entry_point(self, function):
