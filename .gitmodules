@@ -1,0 +1,3 @@
+[submodule "src/pyasm2"]
+	path = src/pyasm2
+	url = git@github.com:ssarangi/pyasm2.git
