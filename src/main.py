@@ -25,7 +25,7 @@ THE SOFTWARE.
 import sys
 import ast
 
-from src.py2ir.const_propagation import ConstPropagationPass
+from src.optimizer.const_propagation import ConstPropagationPass
 from src.optimizer.passmanager import PassManager
 from src.utils.print_utils import draw_header
 from src.py2ir.generate_ir import IRGenerator
