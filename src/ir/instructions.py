@@ -97,10 +97,7 @@ class Instruction(Value):
         if self.__name is None:
             return None
 
-        if self.__name[0] != "%":
-            return "%" + self.__name
-        else:
-            return self.__name
+        return self.__name
 
     @name.setter
     def name(self, n):
