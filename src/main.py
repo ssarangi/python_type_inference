@@ -26,6 +26,7 @@ import sys
 import ast
 
 from src.optimizer.const_propagation import ConstPropagationPass
+from src.optimizer.structurizer import StructurizerAnalysisPass
 from src.optimizer.passmanager import PassManager
 from src.codegen.x86codegen import x86CodeGen
 from src.codegen.jscodegen import JSCodeGen
@@ -55,8 +56,11 @@ def generate_ir(tree):
 
     # codegen = x86CodeGen()
     codegen = JSCodeGen()
+    structurizer = StructurizerAnalysisPass()
+
     passmgr = PassManager()
     # passmgr.add_function_pass(ConstPropagationPass())
+    passmgr.add_function_pass(structurizer)
     passmgr.add_module_pass(codegen)
     passmgr.run(module)
 

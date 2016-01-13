@@ -1,6 +1,7 @@
 __author__ = 'sarangis'
 
 from src.ir.module import *
+from src.ir.function import *
 from src.optimizer.pass_support import *
 
 class PassManager:
@@ -15,13 +16,13 @@ class PassManager:
     def add_module_pass(self, module_pass):
         self.__passes.append(module_pass)
 
-    @verify(module=Module)
+    @verify(module=U(Function, Module))
     def run(self, module):
         for p in self.__passes:
             if isinstance(p, ModulePass):
                 p.run_on_module(module)
             elif isinstance(p, FunctionPass):
-                for f in module.functions:
+                for name, f in module.functions.items():
                     p.run_on_function(f)
             elif isinstance(p, InstVisitorPass):
                 p.visit(module)
