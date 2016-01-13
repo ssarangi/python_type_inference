@@ -182,6 +182,12 @@ class IRGenerator(ast.NodeVisitor):
         if not else_block.has_terminator():
             irbuilder.create_branch(exit_if_block)
 
+        self.current_func.basic_blocks.append(if_block)
+        self.current_func.basic_blocks.append(else_block)
+        self.current_func.basic_blocks.append(exit_if_block)
+
+        irbuilder.insert_after(exit_if_block)
+
     def visit_Call(self, node):
         irbuilder = self.irbuilder
         irfunc = self.global_scope[node.func.id]

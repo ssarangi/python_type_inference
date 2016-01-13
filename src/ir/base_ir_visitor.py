@@ -59,6 +59,9 @@ class IRBaseVisitor(BaseVisitor):
     def visit_phiinstruction(self, node):
         pass
 
+    def visit_branchinstruction(self, node):
+        pass
+
     def visit_conditionalbranchinstruction(self, node):
         pass
 

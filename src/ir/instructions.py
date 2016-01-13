@@ -97,7 +97,10 @@ class Instruction(Value):
         if self.__name is None:
             return None
 
-        return self.__name
+        if self.__name[0] != "%":
+            return "%" + self.__name
+        else:
+            return self.__name
 
     @name.setter
     def name(self, n):
@@ -309,6 +312,10 @@ class BranchInstruction(Instruction):
         if parent is not None:
             parent.add_successor = bb
             bb.add_predecesssor = parent
+
+    @property
+    def basic_block(self):
+        return self.__bb
 
     def __str__(self):
         output_str = "br " + self.__bb.name
@@ -618,6 +625,13 @@ class BasicBlock(Validator):
     def parent(self, bb):
         self.__parent = bb
 
+    def is_empty(self):
+        if len(self.__instructions) == 0 or \
+           isinstance(self.__instructions[-1], BranchInstruction):
+            return True
+
+        return False
+
     def get_terminator(self):
         inst = None
         if len(self.__instructions) > 0:
@@ -654,7 +668,7 @@ class BasicBlock(Validator):
 
     def render(self):
         predecessor_names = [p.name for p in self.__predecessors]
-        output_str = self.name + ": "
+        output_str = "<" + self.name + ">" + ": "
         if len(predecessor_names) > 0:
             output_str += "; pred: " + str(predecessor_names)
 
@@ -670,6 +684,6 @@ class BasicBlock(Validator):
         return output_str
 
     def __str__(self):
-        return self.name
+        return "<" + self.name + ">"
 
     __repr__ = __str__
