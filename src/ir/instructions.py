@@ -317,7 +317,7 @@ class BranchInstruction(Instruction):
 
 class ConditionalBranchInstruction(Instruction):
     def __init__(self, cmp_inst, value, bb_true, bb_false, parent=None, name=None):
-        Instruction.__init__(self, [cmp_inst, bb_true, bb_false], parent, name)
+        Instruction.__init__(self, [cmp_inst, bb_true, bb_false], parent, name, needs_name=False)
         self.__cmp_inst = cmp_inst
         self.__value = value
         self.__bb_true = bb_true
@@ -617,6 +617,22 @@ class BasicBlock(Validator):
     @parent.setter
     def parent(self, bb):
         self.__parent = bb
+
+    def get_terminator(self):
+        inst = None
+        if len(self.__instructions) > 0:
+            inst = self.__instructions[-1]
+
+        if isinstance(inst, ReturnInstruction) or isinstance(inst, BranchInstruction) or isinstance(inst, ConditionalBranchInstruction):
+            return inst
+        else:
+            return None
+
+    def has_terminator(self):
+        if self.get_terminator() is not None:
+            return True
+
+        return False
 
     @verify(inst=Instruction)
     def find_instruction_idx(self, inst):

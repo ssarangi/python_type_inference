@@ -179,7 +179,7 @@ class IRBuilder:
         self.__add_instruction(div_inst)
         return div_inst
 
-    def create_icmp(self, lhs, rhs, name=None):
+    def create_icmp(self, lhs, rhs, comparator, name=None):
         icmp_inst = ICmpInstruction(CompareTypes.SLE, lhs, rhs, self.__current_bb, name)
         self.__add_instruction(icmp_inst)
         return icmp_inst

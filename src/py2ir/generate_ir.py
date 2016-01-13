@@ -26,6 +26,7 @@ from src.ir.module import Module
 from src.ir.context import Context
 from src.ir.irbuilder import IRBuilder
 from src.ir.value import Argument
+from src.ir.instructions import CompareTypes
 
 import ast
 
@@ -39,6 +40,7 @@ class IRGenerator(ast.NodeVisitor):
         self.current_scope_stack = []
         self.symbol_tables = [{}]
         self.global_scope = {}
+        self.current_func = None
 
     def get_current_symbol_table(self):
         return self.symbol_tables[-1]
@@ -126,6 +128,60 @@ class IRGenerator(ast.NodeVisitor):
 
         self.symbol_tables.pop()
 
+    def visit_GT(self):
+        return CompareTypes.SGT
+
+    def visit_GE(self):
+        return CompareTypes.SGE
+
+    def visit_EQ(self):
+        return CompareTypes.EQ
+
+    def visit_LE(self):
+        return CompareTypes.SLE
+
+    def visit_LT(self):
+        return CompareTypes.SLT
+
+    def visit_Compare(self, node):
+        induction_var = node.left
+
+        assert len(node.comparators) == 1
+        induction_var_value_check = node.comparators[0]
+
+        assert len(node.ops) == 1
+
+        # So create a compare instruction
+        irbuilder = self.irbuilder
+        cmp = irbuilder.create_icmp(self.visit(induction_var), self.visit(induction_var_value_check), self.visit(node.ops[0]))
+        return cmp
+
+    def visit_If(self, node):
+        cmp = self.visit(node.test)
+
+        irbuilder = self.irbuilder
+        if_block = irbuilder.create_basic_block("if", self.current_func)
+        else_block = irbuilder.create_basic_block("else", self.current_func)
+        exit_if_block = irbuilder.create_basic_block("endif", self.current_func)
+
+        irbuilder.create_cond_branch(cmp, 1, if_block, else_block)
+
+        # Add the code for the if-block
+        irbuilder.insert_after(if_block)
+        for inst in node.body:
+            self.visit(inst)
+
+        if not if_block.has_terminator():
+            irbuilder.create_branch(exit_if_block)
+
+        # Add the code for the else-block
+        irbuilder.insert_after(else_block)
+        for inst in node.orelse:
+            self.visit(inst)
+
+        if not else_block.has_terminator():
+            irbuilder.create_branch(exit_if_block)
+
     def visit_Call(self, node):
         irbuilder = self.irbuilder
         irfunc = self.global_scope[node.func.id]
@@ -153,6 +209,8 @@ class IRGenerator(ast.NodeVisitor):
             self.get_current_symbol_table()[irarg.name] = irarg
 
         irfunc = irbuilder.create_function(func.name, irargs)
+        self.current_func = irfunc
+
         entry_bb = irbuilder.create_basic_block("entry", irfunc)
         irfunc.basic_blocks.append(entry_bb)
         irbuilder.insert_after(entry_bb)
@@ -164,3 +222,4 @@ class IRGenerator(ast.NodeVisitor):
 
         if func.name == "main":
             self.module.entry_point = irfunc
+
