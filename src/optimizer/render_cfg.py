@@ -23,23 +23,33 @@ THE SOFTWARE.
 """
 
 from src.optimizer.pass_support import *
-import networkx as nx
-import matplotlib.pyplot as plt
+
+from src.utils.print_utils import draw_header
+
+from queue import Queue
 
 class RenderCFGPass(FunctionPass):
     def __init__(self):
         FunctionPass.__init__(self)
 
     def run_on_function(self, node):
-        g = nx.Graph()
-        for bb in node.basic_blocks:
-            g.add_node(bb)
+        entry_block = node.basic_blocks[0]
+        Q = Queue()
+        Q.put(entry_block)
 
+        indent = " " * 4
+        dot_str = "digraph g {\n"
+        dot_str += indent + "node [shape=box];\n"
+
+        while not Q.empty():
+            bb = Q.get()
             # Now from bb add all the successor blocks
             for succ in bb.successors:
-                g.add_node(succ)
-                g.add_edge(bb, succ)
+                dot_str += indent + bb.name + " -> " + succ.name + ";\n"
+                Q.put(succ)
 
+        dot_str += "}"
 
-        nx.draw(g)
-        plt.show()
+        draw_header("Control Flow Graph: %s" % node.name)
+        print("Visualize this graph at: http://mdaines.github.io/viz.js/")
+        print(dot_str)

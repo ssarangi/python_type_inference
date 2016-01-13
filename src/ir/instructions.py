@@ -310,8 +310,8 @@ class BranchInstruction(Instruction):
         self.__bb = bb
 
         if parent is not None:
-            parent.add_successor = bb
-            bb.add_predecesssor = parent
+            parent.add_successor(bb)
+            bb.add_predecessor(parent)
 
     @property
     def basic_block(self):
