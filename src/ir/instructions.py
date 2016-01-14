@@ -589,11 +589,12 @@ class XorInstruction(BitwiseBinaryInstruction):
 
 class BasicBlock(Validator):
     def __init__(self, name, parent):
+        name = parent.name_generator.generate_bb(name)
         self.__name = name
         self.__parent = parent
         self.__instructions = InstructionList(parent.name_generator)
-        self.__predecessors = []
-        self.__successors = []
+        self.__predecessors = set()
+        self.__successors = set()
 
     @property
     def predecessors(self):
@@ -604,10 +605,10 @@ class BasicBlock(Validator):
         return self.__successors
 
     def add_predecessor(self, predecessor):
-        self.__predecessors.append(predecessor)
+        self.__predecessors.add(predecessor)
 
     def add_successor(self, successor):
-        self.__successors.append(successor)
+        self.__successors.add(successor)
 
     @property
     def name(self):

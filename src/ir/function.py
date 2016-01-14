@@ -2,7 +2,7 @@
 
 from src.ir.exceptions import *
 from src.ir.validator import *
-from src.ir.instructions import Instruction
+from src.ir.instructions import Instruction, BasicBlock
 
 class Global:
     def __init__(self, name, initializer):
@@ -27,9 +27,17 @@ class NameGenerator:
         self.__variable_idx = 0
         self.__named_variables = {}
 
+        self.__bb_idx = 0
+        self.__bb_names = {}
+
     def __get_variable_idx(self):
         current_idx = self.__variable_idx
         self.__variable_idx += 1
+        return str(current_idx)
+
+    def __get_basic_block_idx(self):
+        current_idx = self.__bb_idx
+        self.__bb_idx += 1
         return str(current_idx)
 
     def __get_named_var_idx(self, name):
@@ -42,12 +50,29 @@ class NameGenerator:
 
         return new_name
 
+    def __get_named_bb_idx(self, name):
+        new_name = name
+        if name in self.__bb_names:
+            new_name += "_" + str(self.__bb_names[name] + 1)
+            self.__bb_names[name] += 1
+        else:
+            self.__bb_names[name] = 0
+
+        return new_name
+
     @verify(inst=Instruction)
     def generate(self, inst):
         if inst.name is None:
             return self.__get_variable_idx()
         else:
             return self.__get_named_var_idx(inst.name)
+
+    @verify(bb_name=str)
+    def generate_bb(self, bb_name):
+        if bb_name is None:
+            return "bb_%s" % self.__get_basic_block_idx()
+        else:
+            return self.__get_named_bb_idx(bb_name)
 
 
 class Function(Validator):

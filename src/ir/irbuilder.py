@@ -47,6 +47,10 @@ class IRBuilder:
     def context(self, ctx):
         self.__context = ctx
 
+    def get_current_bb(self):
+        assert self.__current_bb is not None
+        return self.__current_bb
+
     def insert_after(self, ip):
         if isinstance(ip, BasicBlock):
             self.__insertion_point = ip

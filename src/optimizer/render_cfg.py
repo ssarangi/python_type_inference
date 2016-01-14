@@ -41,8 +41,15 @@ class RenderCFGPass(FunctionPass):
         dot_str = "digraph g {\n"
         dot_str += indent + "node [shape=box];\n"
 
+        visited = []
+
         while not Q.empty():
             bb = Q.get()
+            if bb in visited:
+                continue
+
+            visited.append(bb)
+
             # Now from bb add all the successor blocks
             for succ in bb.successors:
                 dot_str += indent + bb.name + " -> " + succ.name + ";\n"

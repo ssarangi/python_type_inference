@@ -30,6 +30,12 @@ from src.ir.instructions import CompareTypes
 
 import ast
 
+class IfElseEndif:
+    def __init__(self, if_blk, else_blk, endif_blk):
+        self.if_blk = if_blk
+        self.else_blk = else_blk
+        self.endif_blk = endif_blk
+
 class IRGenerator(ast.NodeVisitor):
     """
     Constant Propagation Visitor: This class does constant propagation for the node visitor so that types can be inferred
@@ -41,6 +47,7 @@ class IRGenerator(ast.NodeVisitor):
         self.symbol_tables = [{}]
         self.global_scope = {}
         self.current_func = None
+        self.cfg_stack = []
 
     def get_current_symbol_table(self):
         return self.symbol_tables[-1]
@@ -164,28 +171,33 @@ class IRGenerator(ast.NodeVisitor):
         else_block = irbuilder.create_basic_block("else", self.current_func)
         exit_if_block = irbuilder.create_basic_block("endif", self.current_func)
 
+        # Create a CFG stack
+        cfg = IfElseEndif(if_block, else_block, exit_if_block)
+        self.cfg_stack.append(cfg)
+
         irbuilder.create_cond_branch(cmp, 1, if_block, else_block)
 
         # Add the code for the if-block
+        self.current_func.basic_blocks.append(if_block)
         irbuilder.insert_after(if_block)
         for inst in node.body:
             self.visit(inst)
 
-        if not if_block.has_terminator():
+        current_blk = irbuilder.get_current_bb()
+        if not current_blk.has_terminator():
             irbuilder.create_branch(exit_if_block)
 
         # Add the code for the else-block
+        self.current_func.basic_blocks.append(else_block)
         irbuilder.insert_after(else_block)
         for inst in node.orelse:
             self.visit(inst)
 
-        if not else_block.has_terminator():
+        current_blk = irbuilder.get_current_bb()
+        if not current_blk.has_terminator():
             irbuilder.create_branch(exit_if_block)
 
-        self.current_func.basic_blocks.append(if_block)
-        self.current_func.basic_blocks.append(else_block)
         self.current_func.basic_blocks.append(exit_if_block)
-
         irbuilder.insert_after(exit_if_block)
 
     def visit_Call(self, node):

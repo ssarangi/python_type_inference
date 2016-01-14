@@ -9,6 +9,7 @@ def main(a, b, c):
             c = a * b
             a = c - b
             d = a - c
+        d = d * 5
     else:
         d = b
 
