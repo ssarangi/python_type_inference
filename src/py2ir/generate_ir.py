@@ -30,12 +30,6 @@ from src.ir.instructions import CompareTypes
 
 import ast
 
-class IfElseEndif:
-    def __init__(self, if_blk, else_blk, endif_blk):
-        self.if_blk = if_blk
-        self.else_blk = else_blk
-        self.endif_blk = endif_blk
-
 class IRGenerator(ast.NodeVisitor):
     """
     Constant Propagation Visitor: This class does constant propagation for the node visitor so that types can be inferred
@@ -170,10 +164,6 @@ class IRGenerator(ast.NodeVisitor):
         if_block = irbuilder.create_basic_block("if", self.current_func)
         else_block = irbuilder.create_basic_block("else", self.current_func)
         exit_if_block = irbuilder.create_basic_block("endif", self.current_func)
-
-        # Create a CFG stack
-        cfg = IfElseEndif(if_block, else_block, exit_if_block)
-        self.cfg_stack.append(cfg)
 
         irbuilder.create_cond_branch(cmp, 1, if_block, else_block)
 
