@@ -36,12 +36,12 @@ class IfElseBlock:
 
 
 def find_culminating_block(start_bb):
-    while start_bb.is_empty() and start_bb.has_terminator():
+    while not start_bb.is_empty() and start_bb.has_terminator():
         terminator = start_bb.get_terminator()
-        assert isinstance(terminator, BranchInstruction)
-        start_bb = terminator.basic_block
-
-    return start_bb
+        if isinstance(terminator, BranchInstruction):
+            start_bb = terminator.basic_block
+        else:
+            return start_bb
 
 class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
     def __init__(self):
