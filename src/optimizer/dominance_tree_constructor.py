@@ -42,6 +42,10 @@ class DominanceTreeConstructorPass(FunctionPass):
     @verify(node=Function)
     def run_on_function(self, node):
         draw_header("Dominator Tree Constructor")
-        nodes = reverse_post_order_traversal(node)
-        for node in nodes:
-            print(node)
+
+        dom_tree = {}
+        bb_list = node.basic_blocks
+        for bb in bb_list:
+            dom_tree[bb] = None
+
+        start_node = node.entry_block
