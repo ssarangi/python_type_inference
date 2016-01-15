@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from queue import Queue
+
 class DominanceNode:
     def __init__(self, node):
         self.actual_node = node
@@ -37,16 +39,51 @@ class DominanceTree:
         self.root = None
 
     def set_root(self, node):
-        self.root = node
+        self.root = self.find_node(node)
+        if self.root is None:
+            self.root = self.get_new_node(node)
 
-    def depth(self):
-        pass
+        self.root.parent = None
 
-    def set_idom(self):
-        pass
+    @staticmethod
+    def get_new_node(self, node):
+        return DominanceNode(node)
 
-    def find_node(self):
-        pass
+    def depth(self, key):
+        node = self.find_node(key)
+        depth = 0
+        while node is not None:
+            node = node.parent
+            depth += 1
+
+        return depth
+
+    def set_idom(self, node, idom):
+        dom_node = self.find_node(node)
+        dom_idom = self.find_node(idom)
+
+        if dom_node is None:
+            dom_node = self.get_new_node(node)
+        else:
+            dom_node.parent.remove(dom_node)
+
+        dom_idom.children.add(dom_node)
+
+    def find_node(self, key):
+        if self.root is None:
+            return None
+
+        visitQ = Queue()
+        visitQ.put(self.root)
+
+        while visitQ.not_empty:
+            node = visitQ.get()
+            if (node.actual_node == key):
+                return node
+
+            children = node.children
+            for child in children:
+                visitQ.put(child)
 
     def __str__(self):
         pass
