@@ -29,6 +29,8 @@ from src.optimizer.const_propagation import ConstPropagationPass
 from src.optimizer.structurizer import StructurizerAnalysisPass
 from src.optimizer.passmanager import PassManager
 from src.optimizer.render_cfg import RenderCFGPass
+from src.optimizer.dominance_tree_constructor import DominanceTreeConstructorPass
+
 from src.codegen.x86codegen import x86CodeGen
 from src.codegen.jscodegen import JSCodeGen
 
@@ -58,8 +60,10 @@ def generate_ir(tree):
     # codegen = x86CodeGen()
     codegen = JSCodeGen()
     structurizer = StructurizerAnalysisPass()
+    dom_tree_pass = DominanceTreeConstructorPass()
 
     passmgr = PassManager()
+    passmgr.add_function_pass(dom_tree_pass)
     # passmgr.add_function_pass(ConstPropagationPass())
     passmgr.add_function_pass(RenderCFGPass())
     passmgr.add_function_pass(structurizer)

@@ -161,7 +161,7 @@ class IRGenerator(ast.NodeVisitor):
         cmp = self.visit(node.test)
 
         irbuilder = self.irbuilder
-        if_block = irbuilder.create_basic_block("if", self.current_func)
+        if_block = irbuilder.create_basic_block("then", self.current_func)
         else_block = irbuilder.create_basic_block("else", self.current_func)
         exit_if_block = irbuilder.create_basic_block("endif", self.current_func)
 

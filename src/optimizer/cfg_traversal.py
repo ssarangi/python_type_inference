@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) <2015> <sarangis>
+Copyright (c) 2015 <Satyajit Sarangi>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from src.utils.print_utils import draw_header
+def post_order_traversal(func):
+    # Find the entry block
+    entry_block = func.entry_block
+    visited = set()
+    order = []
+    def dfs_walk(node):
+        visited.add(node)
+        for succ in node.successors:
+            if not succ in visited:
+                dfs_walk(succ)
+        order.append(node)
 
-from src.ir.function import Function
-from src.ir.validator import verify
+    dfs_walk(entry_block)
+    return order
 
-from src.optimizer.pass_support import *
-from src.optimizer.cfg_traversal import reverse_post_order_traversal
-
-class DominanceTreeConstructorPass(FunctionPass):
-    def __init__(self):
-        FunctionPass.__init__(self)
-        self.doms = {}
-        self.uniq = {}
-
-    def get_doms(self):
-        pass
-
-    @verify(node=Function)
-    def run_on_function(self, node):
-        draw_header("Dominator Tree Constructor")
-        nodes = reverse_post_order_traversal(node)
-        for node in nodes:
-            print(node)
+def reverse_post_order_traversal(func):
+    order = post_order_traversal(func)
+    order.reverse()
+    return order

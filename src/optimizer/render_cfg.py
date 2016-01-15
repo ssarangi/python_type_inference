@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from src.ir.instructions import ConditionalBranchInstruction
 from src.optimizer.pass_support import *
 
 from src.utils.print_utils import draw_header
@@ -50,9 +51,24 @@ class RenderCFGPass(FunctionPass):
 
             visited.append(bb)
 
+            terminator = bb.get_terminator()
+
+            true_block = None
+            false_block = None
+
+            if isinstance(terminator, ConditionalBranchInstruction):
+                true_block = terminator.bb_true
+                false_block = terminator.bb_false
+
             # Now from bb add all the successor blocks
             for succ in bb.successors:
-                dot_str += indent + bb.name + " -> " + succ.name + ";\n"
+                label = ";\n"
+                if succ == true_block:
+                    label = "[label=True]" + label
+                elif succ == false_block:
+                    label = "[label=False]" + label
+                dot_str += indent + bb.name + " -> " + succ.name
+                dot_str += label
                 Q.put(succ)
 
         dot_str += "}"
