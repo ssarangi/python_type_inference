@@ -48,13 +48,6 @@ class DominanceTreeConstructorPass(FunctionPass):
             if bb != start_node:
                 dom_tree.add_dom(bb, [bb for bb in func.basic_blocks])
 
-        # dom_tree.root = start_node
-
-        df_iterated_blks = post_order_traversal(func)
-
-        for count, blk in enumerate(df_iterated_blks):
-            self.uniq[blk] = count
-
         changed = True
         while changed:
             changed = False
