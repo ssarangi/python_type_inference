@@ -34,7 +34,7 @@ from src.optimizer.cfg_traversal import post_order_traversal, reverse_post_order
 class DominanceTreeConstructorPass(FunctionPass):
     def __init__(self):
         FunctionPass.__init__(self)
-        self.uniq = {}
+        self.dom_tree = None
 
     def run_on_function(self, func):
         draw_header("Dominator Tree Constructor")
@@ -78,4 +78,5 @@ class DominanceTreeConstructorPass(FunctionPass):
                         dom_tree.add_dom(blk, new_idom)
                         changed = True
 
+        self.dom_tree = dom_tree
         print(dom_tree)
