@@ -28,24 +28,54 @@ from src.ir.function import Function
 from src.ir.validator import verify
 
 from src.optimizer.pass_support import *
-from src.optimizer.cfg_traversal import reverse_post_order_traversal
+from src.optimizer.dominance_tree import DominanceTree
+from src.optimizer.cfg_traversal import post_order_traversal, reverse_post_order_traversal
 
 class DominanceTreeConstructorPass(FunctionPass):
     def __init__(self):
         FunctionPass.__init__(self)
-        self.doms = {}
         self.uniq = {}
 
-    def get_doms(self):
-        pass
-
-    @verify(node=Function)
-    def run_on_function(self, node):
+    def run_on_function(self, func):
         draw_header("Dominator Tree Constructor")
 
-        dom_tree = {}
-        bb_list = node.basic_blocks
-        for bb in bb_list:
-            dom_tree[bb] = None
+        dom_tree = DominanceTree()
 
-        start_node = node.entry_block
+        start_node = func.entry_block
+        dom_tree.add_dom_blk(start_node, start_node)
+
+        for bb in func.basic_blocks:
+            if bb != start_node:
+                dom_tree.add_dom(bb, [bb for bb in func.basic_blocks])
+
+        # dom_tree.root = start_node
+
+        df_iterated_blks = post_order_traversal(func)
+
+        for count, blk in enumerate(df_iterated_blks):
+            self.uniq[blk] = count
+
+        changed = True
+        while changed:
+            changed = False
+
+            reverse_post_order_blks = reverse_post_order_traversal(func)
+
+            for blk in reverse_post_order_blks:
+                # For each n in N - {n0}
+                if blk != start_node:
+                    new_idom = set(dom_tree.get_dom(blk))
+                    for pred in blk.predecessors:
+                        doms = dom_tree.get_dom(pred)
+
+                        doms = set(doms)
+                        new_idom = new_idom.intersection(doms)
+                        new_idom.add(blk)
+
+                    prev_dom = dom_tree.get_dom(blk)
+                    new_idom = list(new_idom)
+                    if new_idom != prev_dom:
+                        dom_tree.add_dom(blk, new_idom)
+                        changed = True
+
+        print(dom_tree)

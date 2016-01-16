@@ -24,66 +24,42 @@ THE SOFTWARE.
 
 from queue import Queue
 
-class DominanceNode:
-    def __init__(self, node):
-        self.actual_node = node
-        self.children = set()
-        self.parent = None
-
-    def get_dominators(self):
-        pass
-
-
 class DominanceTree:
     def __init__(self):
-        self.root = None
+        self.__root = None
+        self.__doms = {}
 
-    def set_root(self, node):
-        self.root = self.find_node(node)
-        if self.root is None:
-            self.root = self.get_new_node(node)
+    @property
+    def root(self):
+        return self.__root
 
-        self.root.parent = None
+    @root.setter
+    def root(self, node):
+        # self.__root = self.find_node(node)
+        # if self.__root is None:
+        #     self.__root = DominanceTree.get_new_node(node)
 
-    @staticmethod
-    def get_new_node(self, node):
-        return DominanceNode(node)
+        self.__root = node
+        self.__root.parent = None
 
-    def depth(self, key):
-        node = self.find_node(key)
-        depth = 0
-        while node is not None:
-            node = node.parent
-            depth += 1
+    def add_dom(self, blk, dom):
+        self.__doms[blk] = dom
 
-        return depth
-
-    def set_idom(self, node, idom):
-        dom_node = self.find_node(node)
-        dom_idom = self.find_node(idom)
-
-        if dom_node is None:
-            dom_node = self.get_new_node(node)
+    def add_dom_blk(self, blk, dom_blk):
+        if blk not in self.__doms:
+            self.__doms[blk] = [dom_blk]
         else:
-            dom_node.parent.remove(dom_node)
+            self.__doms[blk].append(dom_blk)
 
-        dom_idom.children.add(dom_node)
-
-    def find_node(self, key):
-        if self.root is None:
-            return None
-
-        visitQ = Queue()
-        visitQ.put(self.root)
-
-        while visitQ.not_empty:
-            node = visitQ.get()
-            if (node.actual_node == key):
-                return node
-
-            children = node.children
-            for child in children:
-                visitQ.put(child)
+    def get_dom(self, blk):
+        return self.__doms[blk]
 
     def __str__(self):
-        pass
+        str = ""
+        for blk, doms in self.__doms.items():
+            str += "%s --> %s\n" % (blk, doms)
+
+        return str
+
+    def __repr__(self):
+        return str(self.__root)
