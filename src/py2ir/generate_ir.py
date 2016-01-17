@@ -26,7 +26,7 @@ from src.ir.module import Module
 from src.ir.context import Context
 from src.ir.irbuilder import IRBuilder
 from src.ir.value import Argument
-from src.ir.instructions import CompareTypes
+from src.ir.instructions import *
 
 import ast
 
@@ -45,6 +45,24 @@ class IRGenerator(ast.NodeVisitor):
 
     def get_current_symbol_table(self):
         return self.symbol_tables[-1]
+
+    def set_symbol(self, sym, val):
+        sym_table = self.get_current_symbol_table()
+        sym_table[sym] = val
+
+    def get_symbol(self, sym):
+        sym_table = self.get_current_symbol_table()
+        if sym in sym_table:
+            return sym_table[sym]
+
+        return None
+
+    def in_symbol_table(self, sym):
+        sym_table = self.get_current_symbol_table()
+        if sym in sym_table:
+            return True
+
+        return False
 
     def current_scope(self):
         return self.current_scope_stack[-1]
@@ -68,8 +86,8 @@ class IRGenerator(ast.NodeVisitor):
     def visit_Name(self, node):
         name = node.id
         # Find the name in the symbol table
-        if name in self.get_current_symbol_table():
-            return self.get_current_symbol_table()[name]
+        if self.in_symbol_table(name):
+            return self.get_symbol(name)
 
         raise Exception("Variable %s not found" % name)
 
@@ -106,6 +124,7 @@ class IRGenerator(ast.NodeVisitor):
 
 
     def visit_Assign(self, node):
+        irbuilder = self.irbuilder
         targets = node.targets
 
         if len(targets) > 1:
@@ -115,13 +134,22 @@ class IRGenerator(ast.NodeVisitor):
         rhs = ast.NodeVisitor.visit(self, value)
 
         target = targets[0]
-        self.get_current_symbol_table()[target.id] = rhs
+        target_sym = self.get_symbol(target.id)
+
+        if target_sym is None:
+            # Create an alloca for this target symbol
+            target_sym = irbuilder.create_alloca()
+
+        assert isinstance(target_sym, AllocaInstruction)
+
+        store = irbuilder.create_store(target_sym, rhs)
+        self.set_symbol(target.id, store)
 
     def visit_Return(self, node):
         value = node.value
         irbuilder = self.irbuilder
         if isinstance(value, ast.Name):
-            inst = self.get_current_symbol_table()[value.id]
+            inst = self.get_symbol(value.id)
             irbuilder.create_return(inst)
         else:
             inst = ast.NodeVisitor.visit(self, value)
@@ -199,7 +227,7 @@ class IRGenerator(ast.NodeVisitor):
         irargs = []
         for arg in args:
             if isinstance(arg, ast.Name):
-                irarg = self.get_current_symbol_table()[arg.name]
+                irarg = self.get_symbol(arg.name)
             else:
                 irarg = ast.NodeVisitor.visit(self, arg)
 
@@ -214,7 +242,7 @@ class IRGenerator(ast.NodeVisitor):
         irargs = [Argument(arg.arg) for arg in func.args.args]
 
         for irarg in irargs:
-            self.get_current_symbol_table()[irarg.name] = irarg
+            self.set_symbol(irarg.name, irarg)
 
         irfunc = irbuilder.create_function(func.name, irargs)
         self.current_func = irfunc
@@ -225,6 +253,9 @@ class IRGenerator(ast.NodeVisitor):
         irfunc.basic_blocks.append(exit_bb)
 
         irbuilder.insert_after(entry_bb)
+        # Create an alloca for the return value
+        retv = irbuilder.create_alloca(name="retv")
+        self.set_symbol("retv", retv)
 
         for inst in func.body:
             ast.NodeVisitor.visit(self, inst)

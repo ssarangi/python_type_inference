@@ -193,19 +193,37 @@ class SelectInstruction(Instruction):
 
 
 class LoadInstruction(Instruction):
-    def __init__(self, parent=None, name=None):
+    def __init__(self, alloca, parent=None, name=None):
         Instruction.__init__(self, [], parent, name)
 
-    def __str__(self):
-        pass
+        assert isinstance(alloca, AllocaInstruction)
+        self.__alloca = alloca
 
+    def __str__(self):
+        str = ""
+        str += "load %s" % self.__alloca
+        return str
 
 class StoreInstruction(Instruction):
-    def __init__(self, parent=None, name=None):
-        Instruction.__init__(self, [], parent, name, needs_name=False)
+    def __init__(self, alloca, value, parent=None):
+        Instruction.__init__(self, [], parent, name=None, needs_name=False)
+
+        assert isinstance(alloca, AllocaInstruction)
+        self.__alloca = alloca
+        self.__value = value
+
+    @property
+    def alloca(self):
+        return self.__alloca
+
+    @property
+    def value(self):
+        return self.__value
 
     def __str__(self):
-        pass
+        str = ""
+        str += "store %s, %s" % (self.__alloca, self.__value)
+        return str
 
 
 class BinOpInstruction(Instruction):
@@ -269,28 +287,19 @@ class DivInstruction(BinOpInstruction):
 
 
 class AllocaInstruction(Instruction):
-    def __init__(self, alloca_type, num_elms=None, align=None, parent=None, name=None):
+    def __init__(self, num_elms=None, parent=None, name=None):
         Instruction.__init__(self, [], parent, name)
-        self.__alloca_type = alloca_type
         self.__num_elms = num_elms
-        self.__align = align
+
+        if self.__num_elms is None:
+            self.__num_elms = 1
 
     @property
     def num_elms(self):
         return self.__num_elms
 
-    @property
-    def alignment(self):
-        return self.__align
-
     def __str__(self):
-        output_str = "alloca "
-        if self.num_elms is not None:
-            output_str += ", i32 %s" % self.num_elms
-
-        if self.alignment is not None:
-            output_str += ", align %s" % self.alignment
-
+        output_str = "alloca [%s]" % self.__num_elms
         return output_str
 
     __repr__ = __str__

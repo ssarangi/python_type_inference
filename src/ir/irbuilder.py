@@ -193,16 +193,18 @@ class IRBuilder:
         self.__add_instruction(select_inst)
         return select_inst
 
-    def create_alloca(self, type, numEls=None, align=None, name=None):
-        alloca_inst = AllocaInstruction(type, numEls, align, self.__current_bb, name)
+    def create_alloca(self, numEls=None, name=None):
+        alloca_inst = AllocaInstruction(numEls, self.__current_bb, name)
         self.__add_instruction(alloca_inst)
         return alloca_inst
 
-    def create_load(self):
-        pass
+    def create_load(self, alloca):
+        load_inst = LoadInstruction(alloca, parent=self.__current_bb)
+        return load_inst
 
-    def create_store(self):
-        pass
+    def create_store(self, alloca, value):
+        store_inst = StoreInstruction(alloca, value, parent=self.__current_bb)
+        return store_inst
 
     def create_shl(self, op1, op2, name=None):
         folded_inst = self.const_fold_binary_op(op1, op2, '<<')
