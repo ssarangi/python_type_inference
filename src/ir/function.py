@@ -82,14 +82,32 @@ class Function(Validator):
 
         self.__arguments = args
         self.__name_generator = NameGenerator()
+        self.__entry_block = None
+        self.__exit_block = None
 
     @property
     def entry_block(self):
+        if self.__entry_block is not None:
+            return self.__entry_block
+
         for bb in self.__basic_blocks:
             if bb.name == "entry":
+                self.__entry_block = bb
                 return bb
 
         raise Exception("No Entry basic block found in function: %s" % self.__name)
+
+    @property
+    def exit_block(self):
+        if self.__exit_block is not None:
+            return self.__exit_block
+
+        for bb in self.__basic_blocks:
+            if bb.name == "exit":
+                self.__exit_block = bb
+                return bb
+
+        return None
 
     @property
     def name_generator(self):

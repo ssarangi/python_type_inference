@@ -99,6 +99,10 @@ class ConstPropagationPass(FunctionPass, IRBaseVisitor):
         if result is not None:
             self.replace_uses_with_const(node, result)
 
+    def visit_callinstruction(self, node):
+        func = node.function
+        
+
     def visit_subinstruction(self, node):
         lhs = node.lhs
         rhs = node.rhs

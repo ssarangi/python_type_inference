@@ -64,7 +64,7 @@ def generate_ir(tree):
 
     passmgr = PassManager()
     passmgr.add_function_pass(dom_tree_pass)
-    # passmgr.add_function_pass(ConstPropagationPass())
+    passmgr.add_function_pass(ConstPropagationPass())
     passmgr.add_function_pass(RenderCFGPass())
     passmgr.add_function_pass(structurizer)
     passmgr.add_module_pass(codegen)

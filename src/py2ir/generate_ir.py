@@ -221,6 +221,9 @@ class IRGenerator(ast.NodeVisitor):
 
         entry_bb = irbuilder.create_basic_block("entry", irfunc)
         irfunc.basic_blocks.append(entry_bb)
+        exit_bb = irbuilder.create_basic_block("exit", irfunc)
+        irfunc.basic_blocks.append(exit_bb)
+
         irbuilder.insert_after(entry_bb)
 
         for inst in func.body:
@@ -230,4 +233,3 @@ class IRGenerator(ast.NodeVisitor):
 
         if func.name == "main":
             self.module.entry_point = irfunc
-
