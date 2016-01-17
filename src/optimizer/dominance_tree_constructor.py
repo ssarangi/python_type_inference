@@ -24,20 +24,60 @@ THE SOFTWARE.
 
 from src.utils.print_utils import draw_header
 
-from src.ir.function import Function
-from src.ir.validator import verify
-
 from src.optimizer.pass_support import *
 from src.optimizer.dominance_tree import DominanceTree
 from src.optimizer.cfg_traversal import post_order_traversal, reverse_post_order_traversal
 
-class DominanceTreeConstructorPass(FunctionPass):
+class DominatorTreeConstructorPass(FunctionPass):
     def __init__(self):
         FunctionPass.__init__(self)
         self.dom_tree = None
 
     def run_on_function(self, func):
         draw_header("Dominator Tree Constructor")
+
+        dom_tree = DominanceTree()
+
+        start_node = func.entry_block
+        dom_tree.add_dom_blk(start_node, start_node)
+
+        for bb in func.basic_blocks:
+            if bb != start_node:
+                dom_tree.add_dom(bb, [bb for bb in func.basic_blocks])
+
+        changed = True
+        while changed:
+            changed = False
+
+            reverse_post_order_blks = reverse_post_order_traversal(func)
+
+            for blk in reverse_post_order_blks:
+                # For each n in N - {n0}
+                if blk != start_node:
+                    new_idom = set(dom_tree.get_dom(blk))
+                    for pred in blk.predecessors:
+                        doms = dom_tree.get_dom(pred)
+
+                        doms = set(doms)
+                        new_idom = new_idom.intersection(doms)
+                        new_idom.add(blk)
+
+                    prev_dom = dom_tree.get_dom(blk)
+                    new_idom = list(new_idom)
+                    if new_idom != prev_dom:
+                        dom_tree.add_dom(blk, new_idom)
+                        changed = True
+
+        self.dom_tree = dom_tree
+        print(dom_tree)
+
+class PostDominatorTreeConstructorPass(FunctionPass):
+    def __init__(self):
+        FunctionPass.__init__(self)
+        self.dom_tree = None
+
+    def run_on_function(self, func):
+        draw_header("Post Dominator Tree Constructor")
 
         dom_tree = DominanceTree()
 
