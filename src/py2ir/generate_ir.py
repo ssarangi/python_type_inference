@@ -42,6 +42,7 @@ class IRGenerator(ast.NodeVisitor):
         self.global_scope = {}
         self.current_func = None
         self.cfg_stack = []
+        self.current_exit_block = None
 
     def get_current_symbol_table(self):
         return self.symbol_tables[-1]
@@ -167,7 +168,7 @@ class IRGenerator(ast.NodeVisitor):
 
             irbuilder.create_store(retv_sym, inst)
 
-        irbuilder.create_branch(retv_sym.parent.parent.exit_block)
+        irbuilder.create_branch(self.current_exit_block)
         self.symbol_tables.pop()
 
     def visit_GT(self):
@@ -254,27 +255,32 @@ class IRGenerator(ast.NodeVisitor):
         self.symbol_tables.append({})
         irargs = [Argument(arg.arg) for arg in func.args.args]
 
-        for irarg in irargs:
-            self.set_symbol(irarg.name, irarg)
-
         irfunc = irbuilder.create_function(func.name, irargs)
         self.current_func = irfunc
 
         entry_bb = irbuilder.create_basic_block("entry", irfunc)
         irfunc.basic_blocks.append(entry_bb)
         exit_bb = irbuilder.create_basic_block("exit", irfunc)
-        irfunc.basic_blocks.append(exit_bb)
+        self.current_exit_block = exit_bb
 
         irbuilder.insert_after(entry_bb)
         # Create an alloca for the return value
         retv = irbuilder.create_alloca(name="retv")
         self.set_symbol("retv", retv)
 
+        # Now create allocas for every argument
+        for irarg in irargs:
+            alloca = irbuilder.create_alloca()
+            irbuilder.create_store(alloca, irarg)
+            self.set_symbol(irarg.name, alloca)
+
         for inst in func.body:
             ast.NodeVisitor.visit(self, inst)
 
         # Now we should have completed generating all the code. So create
         # the return value
+        irfunc.basic_blocks.append(exit_bb)
+
         irbuilder.insert_after(exit_bb)
         retv_loaded = irbuilder.create_load(retv)
         irbuilder.create_return(retv_loaded)
