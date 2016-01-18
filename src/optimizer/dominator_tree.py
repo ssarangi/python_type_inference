@@ -23,6 +23,7 @@ THE SOFTWARE.
 """
 
 from queue import Queue
+from src.ir.instructions import *
 
 class DominanceTree:
     def __init__(self):
@@ -53,6 +54,27 @@ class DominanceTree:
 
     def get_dom(self, blk):
         return self.__doms[blk]
+
+    def dominates(self, dominator, dominated):
+        blk_dominator = dominator
+        blk_dominated = dominated
+
+        if isinstance(dominator, Instruction):
+            blk_dominator = dominator.parent
+
+        if isinstance(dominated, Instruction):
+            blk_dominated = dominated.parent
+
+        if blk_dominated not in self.__doms:
+            raise Exception("Dominator tree information not present for Block: %s" % blk_dominated.name)
+
+        dominators = self.__doms[blk_dominated]
+
+        for dom in dominators:
+            if dom == blk_dominator:
+                return True
+
+        return False
 
     def __str__(self):
         str = ""
