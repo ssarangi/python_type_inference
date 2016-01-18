@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 from queue import Queue
 from src.ir.instructions import *
+from src.ir.validator import *
 
 class DominanceTree:
     def __init__(self):
@@ -55,6 +56,7 @@ class DominanceTree:
     def get_dom(self, blk):
         return self.__doms[blk]
 
+    @verify(dominator=U(BasicBlock, Instruction), dominated=U(BasicBlock, Instruction))
     def dominates(self, dominator, dominated):
         blk_dominator = dominator
         blk_dominated = dominated
