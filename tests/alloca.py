@@ -1,3 +1,3 @@
-def foo():
+def main():
     a = 4
     return a

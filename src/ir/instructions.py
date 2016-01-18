@@ -194,14 +194,14 @@ class SelectInstruction(Instruction):
 
 class LoadInstruction(Instruction):
     def __init__(self, alloca, parent=None, name=None):
-        Instruction.__init__(self, [], parent, name)
+        Instruction.__init__(self, [], parent, name, needs_name=True)
 
         assert isinstance(alloca, AllocaInstruction)
         self.__alloca = alloca
 
     def __str__(self):
         str = ""
-        str += "load %s" % self.__alloca
+        str += "load %s" % self.__alloca.name
         return str
 
 class StoreInstruction(Instruction):
@@ -222,7 +222,7 @@ class StoreInstruction(Instruction):
 
     def __str__(self):
         str = ""
-        str += "store %s, %s" % (self.__alloca, self.__value)
+        str += "store %s, %s" % (self.__alloca.name, self.__value)
         return str
 
 
@@ -288,7 +288,7 @@ class DivInstruction(BinOpInstruction):
 
 class AllocaInstruction(Instruction):
     def __init__(self, num_elms=None, parent=None, name=None):
-        Instruction.__init__(self, [], parent, name)
+        Instruction.__init__(self, [], parent, name, needs_name=True)
         self.__num_elms = num_elms
 
         if self.__num_elms is None:
@@ -299,7 +299,7 @@ class AllocaInstruction(Instruction):
         return self.__num_elms
 
     def __str__(self):
-        output_str = "alloca [%s]" % self.__num_elms
+        output_str = "alloca [%s]*" % (self.__num_elms)
         return output_str
 
     __repr__ = __str__
@@ -678,7 +678,12 @@ class BasicBlock(Validator):
 
     def render(self):
         predecessor_names = [p.name for p in self.__predecessors]
-        output_str = "<" + self.name + ">" + ": "
+
+        output_str = ""
+        if len(self.__predecessors) > 0:
+            output_str += "\n"
+
+        output_str += "<" + self.name + ">" + ": "
         if len(predecessor_names) > 0:
             output_str += "; pred: " + str(predecessor_names)
 

@@ -200,10 +200,12 @@ class IRBuilder:
 
     def create_load(self, alloca):
         load_inst = LoadInstruction(alloca, parent=self.__current_bb)
+        self.__add_instruction(load_inst)
         return load_inst
 
     def create_store(self, alloca, value):
         store_inst = StoreInstruction(alloca, value, parent=self.__current_bb)
+        self.__add_instruction(store_inst)
         return store_inst
 
     def create_shl(self, op1, op2, name=None):

@@ -138,23 +138,36 @@ class IRGenerator(ast.NodeVisitor):
 
         if target_sym is None:
             # Create an alloca for this target symbol
-            target_sym = irbuilder.create_alloca()
+            target_sym = irbuilder.create_alloca(name=target.id)
+            self.set_symbol(target.id, target_sym)
 
         assert isinstance(target_sym, AllocaInstruction)
 
-        store = irbuilder.create_store(target_sym, rhs)
-        self.set_symbol(target.id, store)
+        if isinstance(rhs, AllocaInstruction):
+            rhs = irbuilder.create_load(rhs)
+
+        irbuilder.create_store(target_sym, rhs)
 
     def visit_Return(self, node):
         value = node.value
         irbuilder = self.irbuilder
+        retv_sym = self.get_symbol("retv")
+
         if isinstance(value, ast.Name):
             inst = self.get_symbol(value.id)
-            irbuilder.create_return(inst)
+
+            if isinstance(inst, AllocaInstruction):
+                inst = irbuilder.create_load(inst)
+            irbuilder.create_store(retv_sym, inst)
         else:
             inst = ast.NodeVisitor.visit(self, value)
-            irbuilder.create_return(inst)
 
+            if isinstance(inst, AllocaInstruction):
+                inst = irbuilder.create_load(inst)
+
+            irbuilder.create_store(retv_sym, inst)
+
+        irbuilder.create_branch(retv_sym.parent.parent.exit_block)
         self.symbol_tables.pop()
 
     def visit_GT(self):
@@ -259,6 +272,12 @@ class IRGenerator(ast.NodeVisitor):
 
         for inst in func.body:
             ast.NodeVisitor.visit(self, inst)
+
+        # Now we should have completed generating all the code. So create
+        # the return value
+        irbuilder.insert_after(exit_bb)
+        retv_loaded = irbuilder.create_load(retv)
+        irbuilder.create_return(retv_loaded)
 
         self.global_scope[func.name] = irfunc
 

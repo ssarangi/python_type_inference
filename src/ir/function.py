@@ -163,9 +163,8 @@ class Function(Validator):
         # render each basic block
         for bb in self.__basic_blocks:
             output_str += bb.render()
-            output_str += "\n"
 
-        output_str += "}\n\n"
+        output_str += "}"
         return output_str
 
     def validate(self):
