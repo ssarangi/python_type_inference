@@ -28,12 +28,19 @@ from src.ir.base_ir_visitor import IRBaseVisitor
 from src.optimizer.pass_support import *
 from src.utils.print_utils import draw_header
 
-class IfElseBlock:
+from queue import Queue
+
+class ControlFlowBlock:
     def __init__(self):
         self.true_block = None
         self.false_block = None
         self.cmp_inst = None
+        self.nested = None
 
+class Nested:
+    def __init__(self, bb, next=None):
+        self.bb = bb
+        self.next = next
 
 def find_culminating_block(start_bb):
     while not start_bb.is_empty() and start_bb.has_terminator():
@@ -47,41 +54,50 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
     def __init__(self):
         FunctionPass.__init__(self)
         IRBaseVisitor.__init__(self)
+        self.control_flow_stack = []
 
-        self.structurizable_blocks = None
-        self.func_to_structurizable_blocks = {}
+    def get_current_visited_stack(self):
+        return self.visited_stack[-1]
+
+    def are_all_blocks_visited(self, func):
+        visited_stack = self.get_current_visited_stack()
+
+        for bb in func.basic_blocks:
+            if bb not in visited_stack:
+                return False
+
+        return True
 
     @verify(node=Function)
     def run_on_function(self, node):
-        structurizable_blocks = {}
-        self.func_to_structurizable_blocks[node.name] = structurizable_blocks
         draw_header("Structurizer: %s" % node.name)
         func = node
 
-        for bb in func.basic_blocks:
-            if bb in structurizable_blocks.keys():
-                continue
+        queue = Queue()
+        queue.put(Nested(func.entry_block))
 
-            # Check to see if the bb has a terminator block
-            if bb.has_terminator():
-                terminator = bb.get_terminator()
-                if isinstance(terminator, ConditionalBranchInstruction):
-                    # Ok this might be the if condition.
-                    true_block = terminator.bb_true
-                    false_block = terminator.bb_false
 
-                    # Find the culminating block for the BB
-                    true_block_culminator = find_culminating_block(true_block)
-                    false_block_culminator = find_culminating_block(false_block)
+        visited = []
+        while not queue.empty():
+            nested_bb = queue.get()
+            bb = nested_bb.bb
 
-                    if true_block_culminator == false_block_culminator:
-                        # For now we can assume that this is an if block.
-                        ifelseblock = IfElseBlock()
-                        ifelseblock.true_block = true_block
-                        ifelseblock.false_block = false_block
+            if bb in visited:
+                # Then we have found a terminating condition.
+                pass
 
-                        # Now figure out the induction variable
-                        ifelseblock.cmp_inst = terminator.cmp_inst
+            terminator = bb.get_terminator()
+            if isinstance(terminator, ConditionalBranchInstruction):
+                # Start a visited stack
+                # Start with an If-else block
+                cfb = ControlFlowBlock()
+                cfb.true_block = Nested(terminator.bb_true)
+                cfb.false_block = Nested(terminator.bb_false)
 
-                        structurizable_blocks[node] = ifelseblock
-
+                queue.put(Nested(terminator.bb_true))
+                queue.put(Nested(terminator.bb_false))
+            else:
+                assert isinstance(terminator, BranchInstruction)
+                # Find the branch where it terminates to
+                branch_to_bb = terminator.basic_block
+                nested_bb.next = Nested(branch_to_bb)
