@@ -30,19 +30,26 @@ from src.utils.print_utils import draw_header
 
 from queue import Queue
 
-class ControlFlowBlock:
+class Root:
     def __init__(self):
+        self.processed = False
+
+class ControlFlowBlock(Root):
+    def __init__(self, parent):
+        Root.__init__(self)
         self.true_block = None
         self.false_block = None
         self.cmp_inst = None
         self.nested = None
+        self.parent = parent
 
     def __str__(self):
         s = "True: %s <--> False: %s" % (self.true_block, self.false_block)
         return s
 
-class Nested:
+class Nested(Root):
     def __init__(self, bb, parent, next=None):
+        Root.__init__(self)
         self.bb = bb
         self.next = next
         self.parent = parent
@@ -79,16 +86,23 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
             bb = nested_bb.bb
 
             process = True
-            if bb in visited:
+            if bb in visited and not nested_bb.processed:
                 # Then we have found a terminating condition.
                 # Find the root off this control flow block
-                while not isinstance(nested_bb.parent, ControlFlowBlock):
-                    nested_bb = nested_bb.parent
+                while not isinstance(nested_bb, ControlFlowBlock):
+                    child = nested_bb
+                    nested_bb.processed = True
 
-                cfb = nested_bb.parent
+                    if isinstance(nested_bb.parent, ControlFlowBlock) and \
+                    nested_bb.parent.processed is True:
+                        nested_bb = nested_bb.parent.parent
+                    else:
+                        nested_bb = nested_bb.parent
+
+                cfb = nested_bb
 
                 # Now lets look at which side of the cfb we are on.
-                if cfb.true_block == nested_bb:
+                if cfb.true_block == child:
                     nested_bb = cfb.false_block
                 else:
                     nested_bb = cfb.true_block
@@ -98,9 +112,9 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
 
                 # Now we found the Basic Block on the other end. This is the convergence point for the true-false block
                 # so erase all the children of this node.
-                queue.put(nested_bb.next)
                 nested_bb.next = None
                 process = False
+                cfb.processed = True
 
             visited.append(bb)
 
@@ -109,7 +123,7 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
                 if isinstance(terminator, ConditionalBranchInstruction):
                     # Start a visited stack
                     # Start with an If-else block
-                    cfb = ControlFlowBlock()
+                    cfb = ControlFlowBlock(nested_bb)
                     cfb.true_block = Nested(terminator.bb_true, cfb)
                     cfb.false_block = Nested(terminator.bb_false, cfb)
                     self.control_flow_stack.append(cfb)
