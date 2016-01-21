@@ -31,54 +31,41 @@ from src.utils.print_utils import draw_header
 from queue import Queue
 
 class Root:
-    def __init__(self):
+    def __init__(self, parent):
         self.processed = False
+        self.__parent = parent
+
+        if parent is not None:
+            parent.next = self
+
+    @property
+    def parent(self):
+        return self.__parent
+
+    @parent.setter
+    def parent(self, p):
+        self.__parent = p
+        if p is not None:
+            p.next = self
+
 
 class ControlFlowBlock(Root):
     def __init__(self, parent = None):
-        Root.__init__(self)
+        Root.__init__(self, parent)
         self.true_block = None
         self.false_block = None
         self.cmp_inst = None
         self.nested = None
-        self.__parent = parent
-
-        if parent is not None:
-            parent.next = self
-
-    @property
-    def parent(self):
-        return self.__parent
-
-    @parent.setter
-    def parent(self, p):
-        self.__parent = p
-        if p is not None:
-            p.next = self
 
     def __str__(self):
-        s = "True: %s <--> False: %s" % (self.true_block, self.false_block)
+        s = "CFB: True: %s <--> False: %s" % (self.true_block, self.false_block)
         return s
 
 class Nested(Root):
     def __init__(self, bb, parent=None, next=None):
-        Root.__init__(self)
+        Root.__init__(self, parent)
         self.bb = bb
         self.next = next
-        self.__parent = parent
-
-        if parent is not None:
-            parent.next = self
-
-    @property
-    def parent(self):
-        return self.__parent
-
-    @parent.setter
-    def parent(self, p):
-        self.__parent = p
-        if p is not None:
-            p.next = self
 
     def __str__(self):
         s = "Nested: %s" % self.bb
