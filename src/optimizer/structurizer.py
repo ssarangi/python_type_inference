@@ -43,6 +43,9 @@ class ControlFlowBlock(Root):
         self.nested = None
         self.parent = parent
 
+        if parent is not None:
+            parent.next = self
+
     def __str__(self):
         s = "True: %s <--> False: %s" % (self.true_block, self.false_block)
         return s
@@ -53,6 +56,9 @@ class Nested(Root):
         self.bb = bb
         self.next = next
         self.parent = parent
+
+        if parent is not None:
+            parent.next = self
 
     def __str__(self):
         s = "Nested: %s" % self.bb
@@ -71,6 +77,7 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
         FunctionPass.__init__(self)
         IRBaseVisitor.__init__(self)
         self.control_flow_stack = []
+        self.root_node = None
 
     @verify(node=Function)
     def run_on_function(self, node):
@@ -78,17 +85,22 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
         func = node
 
         queue = Queue()
-        queue.put(Nested(func.entry_block, None))
+
+        self.root_node = Nested(func.entry_block, None)
+        queue.put(self.root_node)
 
         visited = []
         while not queue.empty():
             nested_bb = queue.get()
             bb = nested_bb.bb
 
+            converge_point = nested_bb
+
             process = True
             if bb in visited and not nested_bb.processed:
                 # Then we have found a terminating condition.
                 # Find the root off this control flow block
+                child = None
                 while not isinstance(nested_bb, ControlFlowBlock):
                     child = nested_bb
                     nested_bb.processed = True
@@ -100,7 +112,9 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
                         nested_bb = nested_bb.parent
 
                 cfb = nested_bb
+                cfb.next = converge_point
 
+                assert child is not None
                 # Now lets look at which side of the cfb we are on.
                 if cfb.true_block == child:
                     nested_bb = cfb.false_block
@@ -112,7 +126,7 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
 
                 # Now we found the Basic Block on the other end. This is the convergence point for the true-false block
                 # so erase all the children of this node.
-                nested_bb.next = None
+                nested_bb.next = converge_point
                 process = False
                 cfb.processed = True
 
@@ -137,3 +151,7 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
                     queue.put(nested_bb.next)
                 else:
                     assert isinstance(terminator, ReturnInstruction)
+
+
+        root_node = self.root_node
+        print("-" * 100)
