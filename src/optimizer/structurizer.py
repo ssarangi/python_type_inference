@@ -84,15 +84,11 @@ class Nested(Root):
         s = "Nested: %s" % self.bb
         return s
 
-def find_culminating_block(start_bb):
-    while not start_bb.is_empty() and start_bb.has_terminator():
-        terminator = start_bb.get_terminator()
-        if isinstance(terminator, BranchInstruction):
-            start_bb = terminator.basic_block
-        else:
-            return start_bb
-
 class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
+    """
+    This pass defines the Loopy Algorithm for structurizing basic blocks.
+    Read about the algorithm at (http://ssarangi.github.io/2016/01/20/Loopy-Structurizer/)
+    """
     def __init__(self):
         FunctionPass.__init__(self)
         IRBaseVisitor.__init__(self)
