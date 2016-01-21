@@ -35,30 +35,50 @@ class Root:
         self.processed = False
 
 class ControlFlowBlock(Root):
-    def __init__(self, parent):
+    def __init__(self, parent = None):
         Root.__init__(self)
         self.true_block = None
         self.false_block = None
         self.cmp_inst = None
         self.nested = None
-        self.parent = parent
+        self.__parent = parent
 
         if parent is not None:
             parent.next = self
+
+    @property
+    def parent(self):
+        return self.__parent
+
+    @parent.setter
+    def parent(self, p):
+        self.__parent = p
+        if p is not None:
+            p.next = self
 
     def __str__(self):
         s = "True: %s <--> False: %s" % (self.true_block, self.false_block)
         return s
 
 class Nested(Root):
-    def __init__(self, bb, parent, next=None):
+    def __init__(self, bb, parent=None, next=None):
         Root.__init__(self)
         self.bb = bb
         self.next = next
-        self.parent = parent
+        self.__parent = parent
 
         if parent is not None:
             parent.next = self
+
+    @property
+    def parent(self):
+        return self.__parent
+
+    @parent.setter
+    def parent(self, p):
+        self.__parent = p
+        if p is not None:
+            p.next = self
 
     def __str__(self):
         s = "Nested: %s" % self.bb
@@ -79,14 +99,51 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
         self.control_flow_stack = []
         self.root_node = None
 
+        self.cfb_blocks = {}
+        self.nested_blocks = {}
+
+    def create_nested_and_cfb_blocks(self, func):
+        for bb in func.basic_blocks:
+            nested_bb = Nested(bb)
+            self.nested_blocks[bb] = nested_bb
+            terminator = bb.get_terminator()
+            if isinstance(terminator, ConditionalBranchInstruction):
+                cfb = ControlFlowBlock(self.nested_blocks[bb])
+                self.cfb_blocks[bb] = cfb
+                nested_bb.next = cfb
+
+    def get_cfb(self, bb):
+        return self.cfb_blocks[bb]
+
+    def get_nested_bb(self, bb):
+        return self.nested_blocks[bb]
+
+    def find_nearest_cfb_parent_block(self, nested_bb):
+        while not isinstance(nested_bb, ControlFlowBlock):
+            child = nested_bb
+            nested_bb.processed = True
+
+            if isinstance(nested_bb.parent, ControlFlowBlock) and \
+            nested_bb.parent.processed is True:
+                nested_bb = nested_bb.parent.parent
+            else:
+                nested_bb = nested_bb.parent
+
+        assert isinstance(nested_bb, ControlFlowBlock)
+        return nested_bb
+
+
     @verify(node=Function)
     def run_on_function(self, node):
         draw_header("Structurizer: %s" % node.name)
         func = node
 
+        self.create_nested_and_cfb_blocks(func)
+
+        # Create a new queue for BFS
         queue = Queue()
 
-        self.root_node = Nested(func.entry_block, None)
+        self.root_node = self.get_nested_bb(func.entry_block)
         queue.put(self.root_node)
 
         visited = []
@@ -94,39 +151,14 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
             nested_bb = queue.get()
             bb = nested_bb.bb
 
-            converge_point = nested_bb
-
             process = True
             if bb in visited and not nested_bb.processed:
                 # Then we have found a terminating condition.
                 # Find the root off this control flow block
-                child = None
-                while not isinstance(nested_bb, ControlFlowBlock):
-                    child = nested_bb
-                    nested_bb.processed = True
+                converge_point = nested_bb
 
-                    if isinstance(nested_bb.parent, ControlFlowBlock) and \
-                    nested_bb.parent.processed is True:
-                        nested_bb = nested_bb.parent.parent
-                    else:
-                        nested_bb = nested_bb.parent
-
-                cfb = nested_bb
+                cfb = self.find_nearest_cfb_parent_block(nested_bb)
                 cfb.next = converge_point
-
-                assert child is not None
-                # Now lets look at which side of the cfb we are on.
-                if cfb.true_block == child:
-                    nested_bb = cfb.false_block
-                else:
-                    nested_bb = cfb.true_block
-
-                while nested_bb.bb != bb:
-                    nested_bb = nested_bb.next
-
-                # Now we found the Basic Block on the other end. This is the convergence point for the true-false block
-                # so erase all the children of this node.
-                nested_bb.next = converge_point
                 process = False
                 cfb.processed = True
 
@@ -137,18 +169,24 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
                 if isinstance(terminator, ConditionalBranchInstruction):
                     # Start a visited stack
                     # Start with an If-else block
-                    cfb = ControlFlowBlock(nested_bb)
-                    cfb.true_block = Nested(terminator.bb_true, cfb)
-                    cfb.false_block = Nested(terminator.bb_false, cfb)
+                    cfb = self.get_cfb(bb)
+                    cfb.true_block = self.get_nested_bb(terminator.bb_true)
+                    cfb.true_block.parent = cfb
+                    cfb.false_block = self.get_nested_bb(terminator.bb_false)
+                    cfb.false_block.parent = cfb
+
                     self.control_flow_stack.append(cfb)
 
                     queue.put(cfb.true_block)
                     queue.put(cfb.false_block)
+
                 elif isinstance(terminator, BranchInstruction):
                     # Find the branch where it terminates to
                     branch_to_bb = terminator.basic_block
-                    nested_bb.next = Nested(branch_to_bb, nested_bb)
+                    branch_to_bb_nested = self.get_nested_bb(branch_to_bb)
+                    branch_to_bb_nested.parent = nested_bb
                     queue.put(nested_bb.next)
+
                 else:
                     assert isinstance(terminator, ReturnInstruction)
 
