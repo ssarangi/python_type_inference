@@ -34,6 +34,7 @@ class Root:
     def __init__(self, parent):
         self.processed = False
         self.__parent = parent
+        self.__next = None
 
         if parent is not None:
             parent.next = self
@@ -48,6 +49,13 @@ class Root:
         if p is not None:
             p.next = self
 
+    @property
+    def next(self):
+        return self.__next
+
+    @next.setter
+    def next(self, n):
+        self.__next = n
 
 class ControlFlowBlock(Root):
     def __init__(self, parent = None):
@@ -55,7 +63,6 @@ class ControlFlowBlock(Root):
         self.true_block = None
         self.false_block = None
         self.cmp_inst = None
-        self.nested = None
 
     def __str__(self):
         s = "CFB: True: %s <--> False: %s" % (self.true_block, self.false_block)
@@ -65,7 +72,6 @@ class Nested(Root):
     def __init__(self, bb, parent=None, next=None):
         Root.__init__(self, parent)
         self.bb = bb
-        self.next = next
 
     def __str__(self):
         s = "Nested: %s" % self.bb
