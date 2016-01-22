@@ -68,13 +68,13 @@ class ControlFlowBlock(Root):
         s = "CFB: True: %s <--> False: %s" % (self.true_block, self.false_block)
         return s
 
-class Nested(Root):
+class MergedBlock(Root):
     def __init__(self, bb, parent=None, next=None):
         Root.__init__(self, parent)
         self.bb = bb
 
     def __str__(self):
-        s = "Nested: %s" % self.bb
+        s = "Merged: %s" % self.bb
         return s
 
 class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
@@ -89,23 +89,23 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
         self.root_node = None
 
         self.cfb_blocks = {}
-        self.nested_blocks = {}
+        self.merged_blocks = {}
 
     def create_nested_and_cfb_blocks(self, func):
         for bb in func.basic_blocks:
-            nested_bb = Nested(bb)
-            self.nested_blocks[bb] = nested_bb
+            merged_bb = MergedBlock(bb)
+            self.merged_blocks[bb] = merged_bb
             terminator = bb.get_terminator()
             if isinstance(terminator, ConditionalBranchInstruction):
-                cfb = ControlFlowBlock(self.nested_blocks[bb])
+                cfb = ControlFlowBlock(self.merged_blocks[bb])
                 self.cfb_blocks[bb] = cfb
-                nested_bb.next = cfb
+                merged_bb.next = cfb
 
     def get_cfb(self, bb):
         return self.cfb_blocks[bb]
 
-    def get_nested_bb(self, bb):
-        return self.nested_blocks[bb]
+    def get_merged_bb(self, bb):
+        return self.merged_blocks[bb]
 
     def find_nearest_cfb_parent_block(self, nested_bb):
         while not isinstance(nested_bb, ControlFlowBlock):
@@ -121,6 +121,34 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
         assert isinstance(nested_bb, ControlFlowBlock)
         return nested_bb
 
+    def merge_the_blocks(self, merged_bb, terminate_at=None):
+        root = merged_bb
+        merged_bb = merged_bb.next
+
+        # Keep on merging the blocks till we hit a Control Flow Block
+        while not isinstance(merged_bb, ControlFlowBlock) and terminate_at != merged_bb:
+            for inst in merged_bb.bb.instructions:
+                if not isinstance(inst, BranchInstruction):
+                    root.bb.instructions.append(inst)
+                    inst.parent = root.bb
+
+            merged_bb = merged_bb.next
+
+        if terminate_at is not None:
+            self.merge(root.next)
+        else:
+            root.next = merged_bb
+            self.merge(merged_bb)
+
+    def merge_the_cfb(self, cfb):
+        self.merge_the_blocks(cfb.true_block, cfb.next)
+        self.merge_the_blocks(cfb.false_block, cfb.next)
+
+    def merge(self, merge_node):
+        if isinstance(merge_node, MergedBlock):
+            self.merge_the_blocks(merge_node)
+        elif isinstance(merge_node, ControlFlowBlock):
+            self.merge_the_cfb(merge_node)
 
     @verify(node=Function)
     def run_on_function(self, node):
@@ -132,21 +160,21 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
         # Create a new queue for BFS
         queue = Queue()
 
-        self.root_node = self.get_nested_bb(func.entry_block)
+        self.root_node = self.get_merged_bb(func.entry_block)
         queue.put(self.root_node)
 
         visited = []
         while not queue.empty():
-            nested_bb = queue.get()
-            bb = nested_bb.bb
+            merged_bb = queue.get()
+            bb = merged_bb.bb
 
             process = True
-            if bb in visited and not nested_bb.processed:
+            if bb in visited and not merged_bb.processed:
                 # Then we have found a terminating condition.
                 # Find the root off this control flow block
-                converge_point = nested_bb
+                converge_point = merged_bb
 
-                cfb = self.find_nearest_cfb_parent_block(nested_bb)
+                cfb = self.find_nearest_cfb_parent_block(merged_bb)
                 cfb.next = converge_point
                 process = False
                 cfb.processed = True
@@ -159,10 +187,12 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
                     # Start a visited stack
                     # Start with an If-else block
                     cfb = self.get_cfb(bb)
-                    cfb.true_block = self.get_nested_bb(terminator.bb_true)
+                    cfb.true_block = self.get_merged_bb(terminator.bb_true)
                     cfb.true_block.parent = cfb
-                    cfb.false_block = self.get_nested_bb(terminator.bb_false)
+                    cfb.false_block = self.get_merged_bb(terminator.bb_false)
                     cfb.false_block.parent = cfb
+
+                    cfb.parent = merged_bb
 
                     self.control_flow_stack.append(cfb)
 
@@ -172,13 +202,16 @@ class StructurizerAnalysisPass(FunctionPass, IRBaseVisitor):
                 elif isinstance(terminator, BranchInstruction):
                     # Find the branch where it terminates to
                     branch_to_bb = terminator.basic_block
-                    branch_to_bb_nested = self.get_nested_bb(branch_to_bb)
-                    branch_to_bb_nested.parent = nested_bb
-                    queue.put(nested_bb.next)
+                    branch_to_bb_merged = self.get_merged_bb(branch_to_bb)
+                    branch_to_bb_merged.parent = merged_bb
+                    queue.put(merged_bb.next)
 
                 else:
                     assert isinstance(terminator, ReturnInstruction)
 
 
-        root_node = self.root_node
+        node = self.root_node
+
+        # Merge all the branches which have a branch instruction. Stop only when we see Conditional branch
+        self.merge(node)
         print("-" * 100)
