@@ -261,6 +261,9 @@ class IRGenerator(ast.NodeVisitor):
 
         irbuilder.insert_after(exit_while_block)
 
+    def visit_For(self, node):
+        raise Exception("For: Not been implemented since we haven't implemented range iterations")
+
     def visit_Call(self, node):
         irbuilder = self.irbuilder
         irfunc = self.global_scope[node.func.id]
