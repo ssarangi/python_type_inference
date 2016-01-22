@@ -150,10 +150,17 @@ class IRGenerator(ast.NodeVisitor):
         irbuilder.create_store(target_sym, rhs)
 
     def visit_Return(self, node):
-        value = node.value
         irbuilder = self.irbuilder
         retv_sym = self.get_symbol("retv")
 
+        if node is None:
+            none = ConstantNone()
+            irbuilder.create_store(retv_sym, none)
+            irbuilder.create_branch(self.current_exit_block)
+            self.symbol_tables.pop()
+            return
+
+        value = node.value
         if isinstance(value, ast.Name):
             inst = self.get_symbol(value.id)
 
@@ -232,6 +239,28 @@ class IRGenerator(ast.NodeVisitor):
         self.current_func.basic_blocks.append(exit_if_block)
         irbuilder.insert_after(exit_if_block)
 
+    def visit_While(self, node):
+        irbuilder = self.irbuilder
+
+        # Create a comparision object for the while
+        cmp = self.visit(node.test)
+
+        while_block = irbuilder.create_basic_block("while", self.current_func)
+        exit_while_block = irbuilder.create_basic_block("exit_while", self.current_func)
+        irbuilder.create_cond_branch(cmp, 1, while_block, exit_while_block)
+
+        irbuilder.insert_after(while_block)
+
+        for inst in node.body:
+            self.visit(inst)
+
+        irbuilder.create_branch(while_block)
+
+        self.current_func.basic_blocks.append(while_block)
+        self.current_func.basic_blocks.append(exit_while_block)
+
+        irbuilder.insert_after(exit_while_block)
+
     def visit_Call(self, node):
         irbuilder = self.irbuilder
         irfunc = self.global_scope[node.func.id]
@@ -274,8 +303,13 @@ class IRGenerator(ast.NodeVisitor):
             irbuilder.create_store(alloca, irarg)
             self.set_symbol(irarg.name, alloca)
 
-        for inst in func.body:
+        for i, inst in enumerate(func.body):
             ast.NodeVisitor.visit(self, inst)
+
+            if isinstance(inst, ast.While) or isinstance(inst, ast.If) or isinstance(inst, ast.For):
+                if len(func.body) == i + 1:
+                    # Create a default return
+                    self.visit_Return(None)
 
         # Now we should have completed generating all the code. So create
         # the return value

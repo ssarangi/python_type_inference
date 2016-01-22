@@ -11,6 +11,15 @@ class Constant(Value):
 
     __repr__ = __str__
 
+class ConstantNone(Value):
+    def __init__(self):
+        Value.__init__(self)
+
+    def __str__(self):
+        return "None"
+
+    __repr__ = __str__
+
 class Number(Constant):
     def __init__(self, number):
         Constant.__init__(self)

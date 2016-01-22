@@ -452,7 +452,12 @@ class ICmpInstruction(CompareInstruction):
     def __str__(self):
         output_str = "icmp "
         output_str += CompareTypes.get_str(self.condition)
-        output_str += " " + str(self.op1.name) + ", " + str(self.op2.name)
+        output_str += " " + str(self.op1.name) + ", "
+
+        if isinstance(self.op2, Number):
+            output_str += str(self.op2)
+        else:
+            output_str += str(self.op2.name)
         return output_str
 
     __repr__ = __str__
