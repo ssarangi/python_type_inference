@@ -245,17 +245,22 @@ class IRGenerator(ast.NodeVisitor):
         # Create a comparision object for the while
         cmp = self.visit(node.test)
 
+        while_entry_block = irbuilder.create_basic_block("while_entry", self.current_func)
+        irbuilder.create_branch(while_entry_block)
+
         while_block = irbuilder.create_basic_block("while", self.current_func)
         exit_while_block = irbuilder.create_basic_block("exit_while", self.current_func)
+
+        irbuilder.insert_after(while_entry_block)
         irbuilder.create_cond_branch(cmp, 1, while_block, exit_while_block)
 
         irbuilder.insert_after(while_block)
-
         for inst in node.body:
             self.visit(inst)
 
-        irbuilder.create_branch(while_block)
+        irbuilder.create_branch(while_entry_block)
 
+        self.current_func.basic_blocks.append(while_entry_block)
         self.current_func.basic_blocks.append(while_block)
         self.current_func.basic_blocks.append(exit_while_block)
 
